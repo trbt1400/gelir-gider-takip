@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Defter — Gelir Gider Takibi</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --bg:#EEF1EC; --panel:#FFFFFF; --ink:#16241E; --muted:#5B6B62;
+    --line:#D7DED6; --accent:#0F6B5C; --accent-2:#0B4F45;
+    --pos:#1E7A4C; --neg:#A63D2E; --radius:10px;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-sizing:border-box;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#121815; --panel:#1A211D; --ink:#EAEFEA; --muted:#93A399;
+      --line:#2A332D; --accent:#3FA98C; --accent-2:#2E7E68;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#121815; --panel:#1A211D; --ink:#EAEFEA; --muted:#93A399;
+    --line:#2A332D; --accent:#3FA98C; --accent-2:#2E7E68;
+  }
+  *{box-sizing:border-box}
+  html{scroll-padding-top: env(safe-area-inset-top, 0px);}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:15px; line-height:1.5;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:28px 20px 60px}
+  header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:22px;flex-wrap:wrap;gap:8px}
+  header h1{font-size:22px;margin:0;letter-spacing:-.01em}
+  header p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .who{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+  .who button{border:1px solid var(--line);background:var(--panel);color:var(--muted);padding:6px 12px;border-radius:7px;cursor:pointer;font-size:12.5px}
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  .stat .label{color:var(--muted);font-size:12.5px;margin-bottom:6px}
+  .stat .value{font-size:24px;font-variant-numeric:tabular-nums;font-weight:600}
+
+  .tabs{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px;width:fit-content;margin-bottom:16px}
+  .tabs button{border:none;background:transparent;padding:7px 16px;border-radius:999px;cursor:pointer;font-size:13.5px;color:var(--muted)}
+  .tabs button.active{background:var(--accent);color:#fff}
+
+  .grid{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
+  @media (max-width:760px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr}}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+  .panel h2{font-size:14px;margin:0 0 14px;color:var(--muted);font-weight:600}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;color:var(--muted);font-weight:500;padding:6px 4px;border-bottom:1px solid var(--line);font-size:12px}
+  td{padding:8px 4px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:none}
+  .amt.pos{color:var(--pos)}
+  .amt.neg{color:var(--neg)}
+  .tablewrap{max-height:340px;overflow:auto;-webkit-overflow-scrolling:touch}
+  .empty{color:var(--muted);font-size:13px;padding:12px 4px}
+
+  form{display:flex;flex-direction:column;gap:10px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
+  input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);font-size:14px}
+  .seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+  .seg button{flex:1;padding:9px;border:none;background:var(--bg);color:var(--muted);cursor:pointer;font-size:13.5px}
+  .seg button.on{background:var(--accent);color:#fff}
+  .seg button.on.income{background:var(--pos);color:#fff}
+  .seg button.on.expense{background:var(--neg);color:#fff}
+  .submit{background:var(--accent);color:#fff;border:none;padding:11px;border-radius:7px;font-size:14px;cursor:pointer;margin-top:2px}
+  .submit:hover{background:var(--accent-2)}
+  .submit:disabled{opacity:.6;cursor:default}
+  canvas{max-height:220px}
+  .msg{font-size:13px;padding:8px 10px;border-radius:7px;margin-bottom:8px}
+  .msg.err{background:#F6DEDA;color:var(--neg)}
+  .msg.ok{background:#DCEFE2;color:var(--pos)}
+
+  #auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  #auth-screen .card{width:100%;max-width:360px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:26px}
+  #auth-screen h1{font-size:20px;margin:0 0 4px}
+  #auth-screen p{color:var(--muted);font-size:13px;margin:0 0 18px}
+  #dashboard{display:none}
+</style>
+</head>
+<body>
+
+<!-- ============ GİRİŞ EKRANI ============ -->
+<div id="auth-screen">
+  <div class="card">
+    <h1>Defter</h1>
+    <p>Devam etmek için giriş yapın</p>
+    <div id="auth-msg"></div>
+    <form id="auth-form">
+      <div style="margin-bottom:10px">
+        <label>E-posta</label>
+        <input type="email" id="a-email" required>
+      </div>
+      <div style="margin-bottom:14px">
+        <label>Şifre</label>
+        <input type="password" id="a-pass" required>
+      </div>
+      <button class="submit" type="submit" id="a-submit">Giriş yap</button>
+    </form>
+  </div>
+</div>
+
+<!-- ============ DASHBOARD ============ -->
+<div id="dashboard">
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Defter</h1>
+      <p>E-ticaret işletmeniz için gelir / gider takibi</p>
+    </div>
+    <div class="who">
+      <span id="who-email"></span>
+      <button id="logout-btn">Çıkış yap</button>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="label">Bugün (net)</div><div class="value" id="stat-day">—</div></div>
+    <div class="stat"><div class="label">Bu ay (net)</div><div class="value" id="stat-month">—</div></div>
+    <div class="stat"><div class="label">Bu yıl (net)</div><div class="value" id="stat-year">—</div></div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button data-v="day" class="active">Günlük</button>
+    <button data-v="month">Aylık</button>
+    <button data-v="year">Yıllık</button>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2 id="chart-title">Son 14 Gün — Gelir / Gider</h2>
+      <canvas id="chart"></canvas>
+    </div>
+
+    <div class="panel">
+      <h2>Yeni Kayıt Ekle</h2>
+      <div id="form-msg"></div>
+      <form id="form">
+        <div class="seg" id="type-seg">
+          <button type="button" data-type="income" class="on income">Gelir</button>
+          <button type="button" data-type="expense">Gider</button>
+        </div>
+        <div class="seg" id="date-mode-seg" style="margin-bottom:2px">
+          <button type="button" data-mode="day" class="on">Güne göre</button>
+          <button type="button" data-mode="month">Aya göre</button>
+        </div>
+        <div class="row2">
+          <div><label id="f-date-label">Tarih</label><input type="date" id="f-date" required></div>
+          <div><label>Tutar (₺)</label><input type="number" id="f-amount" step="0.01" min="0" required></div>
+        </div>
+        <div>
+          <label>Kategori</label>
+          <input type="text" id="f-cat" list="f-cat-list" placeholder="Seçin veya yeni kategori yazın" autocomplete="off" required>
+          <datalist id="f-cat-list"></datalist>
+        </div>
+        <div><label>Açıklama (opsiyonel)</label><input type="text" id="f-desc" placeholder="ör. Trendyol sipariş #4821"></div>
+        <button class="submit" type="submit" id="f-submit">Kaydet</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:16px">
+    <h2>Son Kayıtlar</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Tarih</th><th>Kategori</th><th>Açıklama</th><th style="text-align:right">Tutar</th></tr></thead>
+        <tbody id="tx-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ============================================================
+// SUPABASE BAĞLANTI BİLGİLERİ — kendi projenizin değerleriyle değiştirin
+// Project Settings > API sayfasından alınır.
+// ============================================================
+const SUPABASE_URL = "https://rwjyszfukwjedaeqletc.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_8YhHaVvhcEAiEYZADcpkOA_d1XtnPts";
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function tl(n){return (n<0?"-":"")+"₺"+Math.abs(n).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function fmtDate(d){return d.toISOString().slice(0,10)}
+
+let categories = { income: [], expense: [] };
+let tx = [];
+let currentType = "income";
+let chart;
+
+// ---------------- AUTH ----------------
+document.getElementById("auth-form").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const btn = document.getElementById("a-submit");
+  const msg = document.getElementById("auth-msg");
+  msg.innerHTML = "";
+  btn.disabled = true; btn.textContent = "Giriş yapılıyor...";
+  const email = document.getElementById("a-email").value;
+  const password = document.getElementById("a-pass").value;
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  btn.disabled = false; btn.textContent = "Giriş yap";
+  if(error){
+    msg.innerHTML = `<div class="msg err">${error.message === "Invalid login credentials" ? "E-posta veya şifre hatalı." : error.message}</div>`;
+  }
+});
+
+document.getElementById("logout-btn").addEventListener("click", async ()=>{
+  await sb.auth.signOut();
+});
+
+sb.auth.onAuthStateChange((event, session)=>{
+  if(session){
+    document.getElementById("auth-screen").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
+    document.getElementById("who-email").textContent = session.user.email;
+    boot();
+  } else {
+    document.getElementById("auth-screen").style.display = "flex";
+    document.getElementById("dashboard").style.display = "none";
+  }
+});
+
+// ---------------- VERİ YÜKLEME ----------------
+async function boot(){
+  await loadCategories();
+  await loadTransactions();
+  fillCats();
+  renderStats(); renderTable();
+  const activeTab = document.querySelector("#tabs button.active").dataset.v;
+  renderChart(activeTab);
+}
+
+async function loadCategories(){
+  const { data, error } = await sb.from("categories").select("id,name,type").order("name");
+  if(error){ console.error(error); return; }
+  categories = { income: [], expense: [] };
+  (data||[]).forEach(c=> categories[c.type].push(c));
+}
+
+async function loadTransactions(){
+  const { data, error } = await sb.from("transactions")
+    .select("id,type,amount,tx_date,description,category_id,categories(name)")
+    .order("tx_date", { ascending:false })
+    .limit(500);
+  if(error){ console.error(error); return; }
+  tx = (data||[]).map(r=>({
+    id:r.id, type:r.type, amount:Number(r.amount), date:r.tx_date,
+    desc:r.description||"", cat: r.categories?.name || "—"
+  }));
+}
+
+function fillCats(){
+  const list = document.getElementById("f-cat-list");
+  list.innerHTML = categories[currentType].map(c=>`<option value="${c.name}"></option>`).join("");
+}
+
+async function resolveCategoryId(name, type, userId){
+  const trimmed = (name||"").trim();
+  if(!trimmed) return null;
+  const existing = categories[type].find(c=> c.name.toLowerCase() === trimmed.toLowerCase());
+  if(existing) return existing.id;
+  const { data, error } = await sb.from("categories")
+    .insert({ user_id: userId, name: trimmed, type })
+    .select().single();
+  if(error) throw error;
+  categories[type].push({ id: data.id, name: data.name, type });
+  return data.id;
+}
+
+// ---------------- STATS / TABLE / CHART ----------------
+function net(list){ return list.reduce((s,r)=> s + (r.type==="income"?r.amount:-r.amount), 0); }
+
+function renderStats(){
+  const today=fmtDate(new Date());
+  const [y,m]=today.split("-");
+  document.getElementById("stat-day").textContent = tl(net(tx.filter(r=>r.date===today)));
+  document.getElementById("stat-month").textContent = tl(net(tx.filter(r=>r.date.slice(0,7)===`${y}-${m}`)));
+  document.getElementById("stat-year").textContent = tl(net(tx.filter(r=>r.date.slice(0,4)===y)));
+}
+
+function renderTable(){
+  const body=document.getElementById("tx-body");
+  if(tx.length===0){
+    body.innerHTML = `<tr><td colspan="4" class="empty">Henüz kayıt yok — sağdaki formdan ilk kaydınızı ekleyin.</td></tr>`;
+    return;
+  }
+  body.innerHTML = tx.slice(0,30).map(r=>`
+    <tr>
+      <td>${r.date.split("-").reverse().join(".")}</td>
+      <td>${r.cat}</td>
+      <td>${r.desc}</td>
+      <td style="text-align:right" class="amt ${r.type==='income'?'pos':'neg'}">${r.type==='income'?'+':'-'}${tl(Math.abs(r.amount))}</td>
+    </tr>`).join("");
+}
+
+function renderChart(view){
+  const ctx=document.getElementById("chart").getContext("2d");
+  let labels=[], incomeData=[], expenseData=[];
+  const now=new Date();
+  if(view==="year"){
+    document.getElementById("chart-title").textContent="Yıllık Gelir / Gider";
+    const years=[...new Set(tx.map(r=>r.date.slice(0,4)))].sort();
+    labels = years.length ? years : [String(now.getFullYear())];
+    incomeData=labels.map(y=>tx.filter(r=>r.date.slice(0,4)===y && r.type==="income").reduce((s,r)=>s+r.amount,0));
+    expenseData=labels.map(y=>tx.filter(r=>r.date.slice(0,4)===y && r.type==="expense").reduce((s,r)=>s+r.amount,0));
+  } else if(view==="month"){
+    document.getElementById("chart-title").textContent=`Aylık Gelir / Gider (${now.getFullYear()})`;
+    const months=["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
+    labels=months;
+    incomeData=months.map((_,i)=>{
+      const key=`${now.getFullYear()}-${String(i+1).padStart(2,"0")}`;
+      return tx.filter(r=>r.date.slice(0,7)===key && r.type==="income").reduce((s,r)=>s+r.amount,0);
+    });
+    expenseData=months.map((_,i)=>{
+      const key=`${now.getFullYear()}-${String(i+1).padStart(2,"0")}`;
+      return tx.filter(r=>r.date.slice(0,7)===key && r.type==="expense").reduce((s,r)=>s+r.amount,0);
+    });
+  } else {
+    document.getElementById("chart-title").textContent="Son 14 Gün — Gelir / Gider";
+    const days=[...Array(14)].map((_,i)=>{const d=new Date(now); d.setDate(d.getDate()-(13-i)); return fmtDate(d);});
+    labels=days.map(d=>d.split("-").slice(1).reverse().join("."));
+    incomeData=days.map(d=>tx.filter(r=>r.date===d && r.type==="income").reduce((s,r)=>s+r.amount,0));
+    expenseData=days.map(d=>tx.filter(r=>r.date===d && r.type==="expense").reduce((s,r)=>s+r.amount,0));
+  }
+  if(chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type:"bar",
+    data:{ labels, datasets:[
+      {label:"Gelir", data:incomeData, backgroundColor:"#1E7A4C"},
+      {label:"Gider", data:expenseData, backgroundColor:"#A63D2E"}
+    ]},
+    options:{
+      responsive:true,
+      plugins:{legend:{position:"bottom", labels:{color:getComputedStyle(document.documentElement).getPropertyValue('--ink')}}},
+      scales:{
+        x:{ticks:{color:getComputedStyle(document.documentElement).getPropertyValue('--muted')}, grid:{display:false}},
+        y:{ticks:{color:getComputedStyle(document.documentElement).getPropertyValue('--muted')}, grid:{color:getComputedStyle(document.documentElement).getPropertyValue('--line')}}
+      }
+    }
+  });
+}
+
+// ---------------- ETKİLEŞİMLER ----------------
+document.getElementById("tabs").addEventListener("click", e=>{
+  const btn=e.target.closest("button"); if(!btn) return;
+  document.querySelectorAll("#tabs button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  renderChart(btn.dataset.v);
+});
+
+document.querySelectorAll("#type-seg button").forEach(b=>{
+  b.addEventListener("click",()=>{
+    currentType=b.dataset.type;
+    document.querySelectorAll("#type-seg button").forEach(x=>x.classList.remove("on","income","expense"));
+    b.classList.add("on", currentType);
+    document.getElementById("f-cat").value = "";
+    fillCats();
+  });
+});
+
+let dateMode = "day";
+document.querySelectorAll("#date-mode-seg button").forEach(b=>{
+  b.addEventListener("click",()=>{
+    dateMode = b.dataset.mode;
+    document.querySelectorAll("#date-mode-seg button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    const dateInput = document.getElementById("f-date");
+    const label = document.getElementById("f-date-label");
+    if(dateMode === "month"){
+      dateInput.type = "month";
+      dateInput.value = fmtDate(new Date()).slice(0,7);
+      label.textContent = "Ay";
+    } else {
+      dateInput.type = "date";
+      dateInput.value = fmtDate(new Date());
+      label.textContent = "Tarih";
+    }
+  });
+});
+
+document.getElementById("f-date").value = fmtDate(new Date());
+
+document.getElementById("form").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const btn = document.getElementById("f-submit");
+  const msg = document.getElementById("form-msg");
+  msg.innerHTML = "";
+  const rawDate=document.getElementById("f-date").value;
+  const amount=parseFloat(document.getElementById("f-amount").value);
+  const catName=document.getElementById("f-cat").value;
+  const desc=document.getElementById("f-desc").value;
+  if(!rawDate || !amount) return;
+  const tx_date = dateMode === "month" ? `${rawDate}-01` : rawDate;
+
+  btn.disabled = true; btn.textContent = "Kaydediliyor...";
+  try{
+    const { data: { user } } = await sb.auth.getUser();
+    const category_id = await resolveCategoryId(catName, currentType, user.id);
+    const { error } = await sb.from("transactions").insert({
+      user_id: user.id, type: currentType, amount, tx_date,
+      category_id, description: desc || null
+    });
+    if(error) throw error;
+    msg.innerHTML = `<div class="msg ok">Kaydedildi.</div>`;
+    document.getElementById("f-amount").value="";
+    document.getElementById("f-desc").value="";
+    fillCats();
+    await loadTransactions();
+    renderStats(); renderTable();
+    const activeTab=document.querySelector("#tabs button.active").dataset.v;
+    renderChart(activeTab);
+  } catch(err){
+    msg.innerHTML = `<div class="msg err">Kaydedilemedi: ${err.message}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = "Kaydet";
+  }
+});
+</script>
+</body>
+</html>
