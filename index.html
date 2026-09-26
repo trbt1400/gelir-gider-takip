@@ -3,789 +3,1142 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Defter — Gelir Gider Takibi</title>
+<meta name="theme-color" content="#16243A">
+<title>Defter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
-  :root{
-    --bg:#EEF1EC; --panel:#FFFFFF; --ink:#16241E; --muted:#5B6B62;
-    --line:#D7DED6; --accent:#0F6B5C; --accent-2:#0B4F45;
-    --pos:#1E7A4C; --neg:#A63D2E; --radius:10px;
-    padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-    box-sizing:border-box;
+:root{
+  --bg:#F3F5F8; --panel:#FFFFFF; --panel-2:#F7F9FB;
+  --ink:#122033; --ink-2:#34445A; --muted:#5B6879; --line:#E2E7EE; --line-2:#EDF1F5;
+  --navy:#16243A; --navy-2:#223553; --on-navy:#FFFFFF; --on-navy-muted:#A9B6C8;
+  --amber:#F4B740; --amber-ink:#2A1D00;
+  --inc:#0B8A78; --inc-text:#0A6E60; --inc-soft:#E3F4F1;
+  --exp:#E0652B; --exp-text:#B24A17; --exp-soft:#FCEDE5;
+  --danger:#C23B22;
+  --radius-lg:18px; --radius:12px; --radius-sm:8px;
+  --shadow:0 1px 2px rgba(18,32,51,.05), 0 8px 24px rgba(18,32,51,.06);
+  --sidebar:232px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E131A; --panel:#141A22; --panel-2:#18202A;
+    --ink:#E8EDF3; --ink-2:#C4CEDA; --muted:#93A0B0; --line:#243040; --line-2:#1D2733;
+    --navy:#1C2B44; --navy-2:#27395A; --on-navy:#FFFFFF; --on-navy-muted:#A9B6C8;
+    --inc:#2FA391; --inc-text:#5CC4B2; --inc-soft:#12302C;
+    --exp:#DC6D38; --exp-text:#F0936A; --exp-soft:#3A2016;
+    --danger:#F07A63;
+    --shadow:0 1px 2px rgba(0,0,0,.3);
+    color-scheme: dark;
   }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
-      --bg:#121815; --panel:#1A211D; --ink:#EAEFEA; --muted:#93A399;
-      --line:#2A332D; --accent:#3FA98C; --accent-2:#2E7E68;
-    }
-  }
-  :root[data-theme="dark"]{
-    --bg:#121815; --panel:#1A211D; --ink:#EAEFEA; --muted:#93A399;
-    --line:#2A332D; --accent:#3FA98C; --accent-2:#2E7E68;
-  }
-  *{box-sizing:border-box}
-  html{scroll-padding-top: env(safe-area-inset-top, 0px);}
-  body{
-    margin:0; background:var(--bg); color:var(--ink);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    font-size:15px; line-height:1.5;
-  }
-  .wrap{max-width:1040px;margin:0 auto;padding:28px 20px 60px}
-  header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:22px;flex-wrap:wrap;gap:8px}
-  header h1{font-size:22px;margin:0;letter-spacing:-.01em}
-  header p{margin:2px 0 0;color:var(--muted);font-size:13px}
-  .who{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
-  .who button{border:1px solid var(--line);background:var(--panel);color:var(--muted);padding:6px 12px;border-radius:7px;cursor:pointer;font-size:12.5px}
+}
+:root[data-theme="dark"]{
+  --bg:#0E131A; --panel:#141A22; --panel-2:#18202A;
+  --ink:#E8EDF3; --ink-2:#C4CEDA; --muted:#93A0B0; --line:#243040; --line-2:#1D2733;
+  --navy:#1C2B44; --navy-2:#27395A; --on-navy:#FFFFFF; --on-navy-muted:#A9B6C8;
+  --inc:#2FA391; --inc-text:#5CC4B2; --inc-soft:#12302C;
+  --exp:#DC6D38; --exp-text:#F0936A; --exp-soft:#3A2016;
+  --danger:#F07A63;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+  color-scheme: dark;
+}
 
-  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
-  .stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
-  .stat .label{color:var(--muted);font-size:12.5px;margin-bottom:6px}
-  .stat .value{font-size:24px;font-variant-numeric:tabular-nums;font-weight:600}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Manrope",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+.num{font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+[hidden]{display:none!important}
 
-  .tabs{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px;width:fit-content;margin-bottom:16px}
-  .tabs button{border:none;background:transparent;padding:7px 16px;border-radius:999px;cursor:pointer;font-size:13.5px;color:var(--muted)}
-  .tabs button.active{background:var(--accent);color:#fff}
+/* ---------- GİRİŞ ---------- */
+#auth{min-height:100vh;display:grid;place-items:center;padding:24px 16px}
+.auth-card{width:100%;max-width:380px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;letter-spacing:-.02em}
+.brand-mark{width:32px;height:32px;border-radius:9px;background:var(--navy);display:grid;place-items:center;flex:none}
+.brand-mark svg{width:18px;height:18px}
+.auth-card .brand{margin-bottom:28px}
+.auth-card h1{font-size:26px;letter-spacing:-.025em;margin:0 0 6px;line-height:1.2}
+.auth-card p.lead{color:var(--muted);margin:0 0 24px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--ink-2);margin-bottom:6px}
+.input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);font-size:15px;transition:border-color .15s}
+.input:focus{border-color:var(--ink-2);outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--amber) 35%,transparent)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid transparent;border-radius:var(--radius-sm);padding:11px 16px;font-weight:700;font-size:14.5px;white-space:nowrap}
+.btn-primary{background:var(--navy);color:var(--on-navy)}
+.btn-primary:hover{background:var(--navy-2)}
+.btn-amber{background:var(--amber);color:var(--amber-ink)}
+.btn-amber:hover{filter:brightness(.96)}
+.btn-ghost{background:transparent;border-color:var(--line);color:var(--ink-2)}
+.btn-ghost:hover{background:var(--panel-2)}
+.btn-danger{background:transparent;border-color:var(--line);color:var(--danger)}
+.btn-danger.confirm{background:var(--danger);color:#fff;border-color:var(--danger)}
+.btn-block{width:100%}
+.btn:disabled{opacity:.55;cursor:default}
+.btn svg{width:18px;height:18px}
+.form-error{background:var(--exp-soft);color:var(--exp-text);border-radius:var(--radius-sm);padding:10px 12px;font-size:13.5px;margin-bottom:14px}
 
-  .grid{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
-  @media (max-width:760px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr}}
+/* ---------- UYGULAMA İSKELETİ ---------- */
+#app{display:none;min-height:100vh}
+#app.on{display:block}
+.sidebar{position:fixed;inset:0 auto 0 0;width:var(--sidebar);background:var(--panel);border-right:1px solid var(--line);padding:22px 14px;display:flex;flex-direction:column;gap:6px;z-index:20}
+.sidebar .brand{padding:0 8px 22px}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:var(--ink-2);text-decoration:none;font-weight:600;font-size:14.5px;border:none;background:none;width:100%;text-align:left}
+.nav-item svg{width:20px;height:20px;flex:none;opacity:.8}
+.nav-item:hover{background:var(--panel-2)}
+.nav-item[aria-current="page"]{background:var(--navy);color:var(--on-navy)}
+.nav-item[aria-current="page"] svg{opacity:1}
+.sidebar .add-btn{margin:8px 0 14px}
+.sidebar-foot{margin-top:auto;border-top:1px solid var(--line);padding:14px 8px 0;font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:8px}
+.sidebar-foot .who{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.linkbtn{background:none;border:none;padding:0;color:var(--ink-2);font-weight:600;font-size:13px;text-align:left}
+.linkbtn:hover{text-decoration:underline}
 
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
-  .panel h2{font-size:14px;margin:0 0 14px;color:var(--muted);font-weight:600}
+.main{margin-left:var(--sidebar);padding:28px 36px 64px;max-width:calc(1180px + var(--sidebar))}
+.topbar{display:none}
+.bottom-nav{display:none}
 
-  table{width:100%;border-collapse:collapse;font-size:13.5px}
-  th{text-align:left;color:var(--muted);font-weight:500;padding:6px 4px;border-bottom:1px solid var(--line);font-size:12px}
-  td{padding:8px 4px;border-bottom:1px solid var(--line)}
-  tr:last-child td{border-bottom:none}
-  .amt.pos{color:var(--pos)}
-  .amt.neg{color:var(--neg)}
-  .tablewrap{max-height:340px;overflow:auto;-webkit-overflow-scrolling:touch}
-  .empty{color:var(--muted);font-size:13px;padding:12px 4px}
-  .rowbtn{border:1px solid var(--line);background:var(--panel);color:var(--muted);padding:4px 9px;border-radius:6px;cursor:pointer;font-size:12px;margin-left:4px}
-  .rowbtn:hover{border-color:var(--accent);color:var(--accent)}
-  .rowbtn.danger:hover{border-color:var(--neg);color:var(--neg)}
-  .inline-amt{width:90px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font-size:13px;text-align:right}
-  .panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px}
-  .panel-head h2{margin:0}
-  .minirow{display:grid;grid-template-columns:1.3fr 1fr .8fr .9fr auto;gap:8px;align-items:end;margin-top:12px}
-  @media (max-width:640px){.minirow{grid-template-columns:1fr}}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.page-head h1{font-size:28px;letter-spacing:-.03em;margin:0;line-height:1.15}
+.page-head .sub{color:var(--muted);font-size:14px;margin-top:4px}
 
-  form{display:flex;flex-direction:column;gap:10px}
-  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
-  input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);font-size:14px}
-  .seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
-  .seg button{flex:1;padding:9px;border:none;background:var(--bg);color:var(--muted);cursor:pointer;font-size:13.5px}
-  .seg button.on{background:var(--accent);color:#fff}
-  .seg button.on.income{background:var(--pos);color:#fff}
-  .seg button.on.expense{background:var(--neg);color:#fff}
-  .submit{background:var(--accent);color:#fff;border:none;padding:11px;border-radius:7px;font-size:14px;cursor:pointer;margin-top:2px}
-  .submit:hover{background:var(--accent-2)}
-  .submit:disabled{opacity:.6;cursor:default}
-  canvas{max-height:220px}
-  .msg{font-size:13px;padding:8px 10px;border-radius:7px;margin-bottom:8px}
-  .msg.err{background:#F6DEDA;color:var(--neg)}
-  .msg.ok{background:#DCEFE2;color:var(--pos)}
+/* Dönem seçici */
+.period{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px}
+.seg button{border:none;background:none;padding:7px 14px;border-radius:8px;font-weight:600;font-size:13.5px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--navy);color:var(--on-navy)}
+.stepper{display:inline-flex;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.stepper button{border:none;background:none;width:36px;height:36px;display:grid;place-items:center;color:var(--ink-2);border-radius:10px}
+.stepper button:hover{background:var(--panel-2)}
+.stepper button:disabled{opacity:.3;cursor:default;background:none}
+.stepper button svg{width:18px;height:18px}
+.stepper .label{min-width:128px;text-align:center;font-weight:700;font-size:14px}
 
-  #auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-  #auth-screen .card{width:100%;max-width:360px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:26px}
-  #auth-screen h1{font-size:20px;margin:0 0 4px}
-  #auth-screen p{color:var(--muted);font-size:13px;margin:0 0 18px}
-  #dashboard{display:none}
-  .hint{color:var(--muted);font-size:12.5px;margin:-6px 0 12px;max-width:72ch}
-  .gen-box{display:flex;gap:6px;align-items:center}
-  .gen-box input{width:auto;padding:5px 8px;font-size:13px}
-  .inline-txt,.inline-date{width:100%;min-width:110px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font-size:13px}
-  .tag{font-size:11px;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 5px;margin-left:4px}
-  .rowbtn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-  .rowbtn.confirm{background:var(--neg);border-color:var(--neg);color:#fff}
-  tr.inactive td{opacity:.55}
-  .muted-cell{color:var(--muted);font-size:12.5px;white-space:nowrap}
-  input[type=checkbox]{width:auto}
-  .msg .rowbtn{margin-left:8px}
+/* Kartlar */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);padding:22px;box-shadow:var(--shadow)}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:8px 12px;margin-bottom:16px;flex-wrap:wrap}
+.card-head h2{font-size:15.5px;margin:0;letter-spacing:-.01em}
+.card-head .meta{color:var(--muted);font-size:13px}
+
+/* Özet: ana kart */
+.overview{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1.6fr);gap:18px;margin-bottom:18px}
+.hero{background:var(--navy);color:var(--on-navy);border-radius:var(--radius-lg);padding:26px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.hero .eyebrow{color:var(--on-navy-muted);font-size:14px;font-weight:600}
+.hero .net{font-size:44px;font-weight:800;letter-spacing:-.035em;line-height:1.05;margin:8px 0 4px}
+.hero .net-note{color:var(--on-navy-muted);font-size:13.5px;min-height:20px}
+.hero .compare{display:inline-flex;align-items:center;gap:6px;margin-top:14px;background:rgba(255,255,255,.08);border-radius:99px;padding:5px 12px;font-size:13px;font-weight:600;color:#DDE5EF;width:fit-content}
+.hero .compare b{color:#fff}
+.hero .split{margin-top:auto;padding-top:26px}
+.splitbar{display:flex;height:10px;border-radius:99px;overflow:hidden;gap:2px;background:rgba(255,255,255,.1)}
+.splitbar span{display:block;height:100%}
+.splitbar .i{background:#3CC2AD}
+.splitbar .e{background:#F08A5A}
+.split-legend{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.split-legend .k{display:flex;align-items:center;gap:7px;color:var(--on-navy-muted);font-size:13px;font-weight:600}
+.split-legend .k i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.split-legend .v{font-size:20px;font-weight:700;margin-top:2px}
+
+.legend{display:flex;gap:16px;font-size:13px;color:var(--ink-2);font-weight:600}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.chart-box{position:relative;height:250px}
+.chart-empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:14px;text-align:center;padding:20px}
+
+.grid-2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+
+/* Kategori çubukları */
+.catbars{display:flex;flex-direction:column;gap:14px}
+.catbar .row{display:flex;justify-content:space-between;gap:10px;font-size:14px;margin-bottom:6px}
+.catbar .row b{font-weight:600}
+.catbar .row .num{color:var(--ink-2);font-weight:600}
+.catbar .row .pct{color:var(--muted);font-weight:500;margin-left:6px}
+.catbar .track{height:8px;border-radius:99px;background:var(--line-2);overflow:hidden}
+.catbar .fill{height:100%;border-radius:99px;background:var(--exp)}
+.seg.small button{padding:5px 10px;font-size:12.5px}
+
+/* Kayıt listesi */
+.txlist{list-style:none;margin:0;padding:0}
+.txrow{display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:12px;padding:11px 8px;border-radius:12px;cursor:pointer;border:none;background:none;width:100%;text-align:left}
+.txrow:hover{background:var(--panel-2)}
+.txicon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-weight:800;font-size:15px}
+.txicon.income{background:var(--inc-soft);color:var(--inc-text)}
+.txicon.expense{background:var(--exp-soft);color:var(--exp-text)}
+.txicon svg{width:19px;height:19px}
+.txmain{min-width:0}
+.txtitle{display:block;font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.txsub{color:var(--muted);font-size:12.5px;display:flex;text-overflow:ellipsis;gap:6px;align-items:center;white-space:nowrap;overflow:hidden}
+.txamt{font-weight:700;font-size:15px;text-align:right;white-space:nowrap}
+.txamt.income{color:var(--inc-text)}
+.txamt.expense{color:var(--ink)}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:99px;background:var(--line-2);color:var(--ink-2)}
+.daygroup{margin-bottom:6px}
+.dayhead{display:flex;justify-content:space-between;align-items:baseline;padding:14px 8px 6px;font-size:13px;color:var(--muted);font-weight:700;border-bottom:1px solid var(--line-2);margin-bottom:4px}
+.empty{color:var(--muted);text-align:center;padding:36px 16px;font-size:14px}
+.empty b{display:block;color:var(--ink);font-size:15.5px;margin-bottom:4px}
+.empty .btn{margin-top:14px}
+.see-all{display:inline-block;margin-top:8px;font-weight:700;font-size:13.5px;color:var(--ink-2);background:none;border:none;padding:4px 8px}
+.see-all:hover{text-decoration:underline}
+
+/* Kayıtlar filtre çubuğu */
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.search{position:relative;flex:1;min-width:180px;max-width:320px}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--muted)}
+.search input{padding-left:38px;padding-top:9px;padding-bottom:9px}
+.totals{display:flex;gap:22px;flex-wrap:wrap;margin-bottom:6px;font-size:13.5px;color:var(--muted)}
+.totals b{color:var(--ink);font-size:16px;display:block}
+
+/* Sabit giderler */
+.rec-summary{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-end}
+.rec-summary .big{font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1.1}
+.rec-summary .lbl{color:var(--muted);font-size:13px;font-weight:600}
+.rec-item{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:16px;align-items:center;padding:14px 8px;border-bottom:1px solid var(--line-2)}
+.rec-item:last-child{border-bottom:none}
+.rec-item .name{font-weight:700;font-size:15px;background:none;border:none;padding:0;text-align:left;color:var(--ink)}
+.rec-item .name:hover{text-decoration:underline}
+.rec-item .sub{color:var(--muted);font-size:12.5px}
+.rec-item.off .name,.rec-item.off .amount{opacity:.5}
+.rec-item .amount{font-weight:700;font-size:15.5px}
+.switch{position:relative;width:42px;height:24px;flex:none}
+.switch input{opacity:0;width:100%;height:100%;margin:0;position:absolute;inset:0;cursor:pointer;z-index:1}
+.switch span{position:absolute;inset:0;background:var(--line);border-radius:99px;transition:background .15s}
+.switch span::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform .15s}
+.switch input:checked + span{background:var(--inc)}
+.switch input:checked + span::after{transform:translateX(18px)}
+.switch input:focus-visible + span{outline:2px solid var(--amber);outline-offset:2px}
+.gen-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.gen-row .input{width:auto;padding:8px 10px}
+
+/* ---------- PANEL (drawer / bottom sheet) ---------- */
+.backdrop{position:fixed;inset:0;background:rgba(10,18,30,.45);z-index:50;opacity:0;pointer-events:none;transition:opacity .2s}
+.backdrop.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);background:var(--panel);z-index:51;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .22s ease,visibility 0s linear .22s;visibility:hidden}
+.sheet.on{transform:none;visibility:visible;transition:transform .22s ease;box-shadow:-12px 0 40px rgba(10,18,30,.18)}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;padding:20px 22px 8px}
+.sheet-head h2{margin:0;font-size:19px;letter-spacing:-.02em}
+.iconbtn{border:none;background:var(--panel-2);width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--ink-2)}
+.iconbtn svg{width:18px;height:18px}
+.sheet-body{padding:12px 22px 22px;overflow:auto;flex:1}
+.sheet-foot{padding:14px 22px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--line);display:flex;gap:10px}
+.sheet-foot .btn-primary{flex:1}
+.typeseg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+.typeseg button{padding:11px;border-radius:10px;border:1.5px solid var(--line);background:var(--panel);font-weight:700;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:8px}
+.typeseg button svg{width:17px;height:17px}
+.typeseg button[aria-pressed="true"][data-type="income"]{border-color:var(--inc);background:var(--inc-soft);color:var(--inc-text)}
+.typeseg button[aria-pressed="true"][data-type="expense"]{border-color:var(--exp);background:var(--exp-soft);color:var(--exp-text)}
+.amount-field{position:relative;margin-bottom:18px}
+.amount-field span{position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:26px;font-weight:700;color:var(--muted)}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
+.amount-field input{font-size:30px;font-weight:800;padding:14px 16px 14px 44px;letter-spacing:-.02em}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:5px 12px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.chip:hover{border-color:var(--ink-2)}
+.chip[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:var(--on-navy)}
+.datemode{display:flex;gap:14px;margin-bottom:8px;font-size:13.5px}
+.datemode label{display:flex;align-items:center;gap:6px;color:var(--ink-2);font-weight:600;cursor:pointer}
+.datemode input{accent-color:var(--navy)}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--ink-2);background:var(--panel-2);border-radius:10px;padding:12px}
+.check input{margin-top:3px;accent-color:var(--navy)}
+.note{font-size:13px;color:var(--muted);margin-top:6px}
+.origin{font-size:13px;color:var(--ink-2);background:var(--panel-2);border-radius:10px;padding:10px 12px;margin-bottom:16px;display:flex;gap:8px;align-items:center}
+.origin svg{width:16px;height:16px;flex:none}
+
+/* Bildirim */
+.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:12px;font-size:14px;font-weight:600;z-index:60;opacity:0;pointer-events:none;transition:all .2s;display:flex;gap:14px;align-items:center;max-width:calc(100% - 32px)}
+.toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast.err{background:var(--danger);color:#fff}
+.toast button{background:none;border:none;color:var(--amber);font-weight:800;padding:0}
+
+.banner{background:var(--exp-soft);color:var(--exp-text);border-radius:var(--radius);padding:12px 14px;font-size:14px;margin-bottom:16px}
+
+/* ---------- MOBİL ---------- */
+@media (max-width:900px){
+  .sidebar{display:none}
+  .main{margin-left:0;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
+  .topbar{display:flex;justify-content:space-between;align-items:center;padding:calc(14px + env(safe-area-inset-top)) 0 14px;position:sticky;top:0;background:var(--bg);z-index:10}
+  .topbar .brand{font-size:17px}
+  .bottom-nav{display:grid;grid-template-columns:1fr 1fr 72px 1fr 1fr;position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:30}
+  .bottom-nav a,.bottom-nav button.tab{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;font-weight:700;color:var(--muted);text-decoration:none;padding:6px 0;border:none;background:none}
+  .bottom-nav svg{width:22px;height:22px}
+  .bottom-nav [aria-current="page"]{color:var(--ink)}
+  .fab{width:56px;height:56px;border-radius:18px;background:var(--amber);color:var(--amber-ink);border:none;display:grid;place-items:center;margin:-22px auto 0;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+  .fab svg{width:26px;height:26px}
+  .page-head{margin:8px 0 18px}
+  .page-head h1{font-size:24px}
+  .overview{grid-template-columns:1fr}
+  .grid-2{grid-template-columns:1fr}
+  .hero .net{font-size:38px}
+  .card{padding:18px;border-radius:16px}
+  .chart-box{height:210px}
+  .period{width:100%}
+  .stepper{flex:1;justify-content:space-between}
+  .sheet{top:auto;left:0;width:100%;max-height:92vh;border-radius:20px 20px 0 0;transform:translateY(100%)}
+  .sheet.on{transform:none}
+  .toast{bottom:calc(92px + env(safe-area-inset-bottom))}
+  .rec-item{grid-template-columns:minmax(0,1fr) auto;row-gap:4px}
+  .rec-item .switch{grid-row:1 / span 2;grid-column:2}
+  .search{max-width:none}
+  .card .txrow{grid-template-columns:34px minmax(0,1fr) auto;gap:10px;padding:10px 4px}
+  .txicon{width:34px;height:34px;border-radius:10px}
+  .txamt{font-size:14px}
+  #view-kayitlar .card,#view-ozet .grid-2 .card{padding:14px 12px}
+}
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
 </style>
+</head>
 <body>
 
-<!-- ============ GİRİŞ EKRANI ============ -->
-<div id="auth-screen">
-  <div class="card">
-    <h1>Defter</h1>
-    <p>Devam etmek için giriş yapın</p>
-    <div id="auth-msg"></div>
+<!-- İkon seti -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+  <symbol id="i-repeat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-in" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7 7 17M16 17H7V8"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="#F4B740" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h14v16H6.5A2.5 2.5 0 0 0 4 21.5"/><path d="M9 8h7M9 12h5"/></symbol>
+</svg>
+
+<!-- ============ GİRİŞ ============ -->
+<div id="auth">
+  <div class="auth-card">
+    <div class="brand"><span class="brand-mark"><svg><use href="#i-book"/></svg></span>Defter</div>
+    <h1>Tekrar hoş geldiniz</h1>
+    <p class="lead">Mağazanızın gelir ve giderlerini görmek için giriş yapın.</p>
+    <div id="auth-error" class="form-error" hidden></div>
     <form id="auth-form">
-      <div style="margin-bottom:10px">
-        <label for="a-email">E-posta</label>
-        <input type="email" id="a-email" autocomplete="username" required>
-      </div>
-      <div style="margin-bottom:14px">
-        <label for="a-pass">Şifre</label>
-        <input type="password" id="a-pass" autocomplete="current-password" required>
-      </div>
-      <button class="submit" type="submit" id="a-submit">Giriş yap</button>
+      <div class="field"><label for="a-email">E-posta</label><input class="input" type="email" id="a-email" autocomplete="username" required></div>
+      <div class="field"><label for="a-pass">Şifre</label><input class="input" type="password" id="a-pass" autocomplete="current-password" required></div>
+      <button class="btn btn-primary btn-block" type="submit" id="a-submit" style="margin-top:6px">Giriş yap</button>
     </form>
   </div>
 </div>
 
-<!-- ============ DASHBOARD ============ -->
-<div id="dashboard">
-<div class="wrap">
-  <header>
-    <div>
-      <h1>Defter</h1>
-      <p>E-ticaret işletmeniz için gelir / gider takibi</p>
+<!-- ============ UYGULAMA ============ -->
+<div id="app">
+  <aside class="sidebar" aria-label="Ana menü">
+    <div class="brand"><span class="brand-mark"><svg><use href="#i-book"/></svg></span>Defter</div>
+    <button class="btn btn-amber btn-block add-btn" data-open="tx"><svg><use href="#i-plus"/></svg>Yeni kayıt</button>
+    <a class="nav-item" href="#ozet" data-route="ozet"><svg><use href="#i-home"/></svg>Özet</a>
+    <a class="nav-item" href="#kayitlar" data-route="kayitlar"><svg><use href="#i-list"/></svg>Kayıtlar</a>
+    <a class="nav-item" href="#sabit" data-route="sabit"><svg><use href="#i-repeat"/></svg>Sabit giderler</a>
+    <div class="sidebar-foot">
+      <span class="who" id="who-email"></span>
+      <button class="linkbtn" data-act="logout">Çıkış yap</button>
     </div>
-    <div class="who">
-      <span id="who-email"></span>
-      <button id="logout-btn">Çıkış yap</button>
-    </div>
-  </header>
+  </aside>
 
-  <div id="top-msg"></div>
-
-  <div class="stats">
-    <div class="stat"><div class="label">Bugün (net)</div><div class="value" id="stat-day">—</div></div>
-    <div class="stat"><div class="label">Bu ay (net)</div><div class="value" id="stat-month">—</div></div>
-    <div class="stat"><div class="label">Bu yıl (net)</div><div class="value" id="stat-year">—</div></div>
-  </div>
-
-  <div class="tabs" id="tabs">
-    <button data-v="day" class="active">Günlük</button>
-    <button data-v="month">Aylık</button>
-    <button data-v="year">Yıllık</button>
-  </div>
-
-  <div class="grid">
-    <div class="panel">
-      <h2 id="chart-title">Son 14 Gün — Gelir / Gider</h2>
-      <canvas id="chart"></canvas>
+  <main class="main">
+    <div class="topbar">
+      <div class="brand"><span class="brand-mark"><svg><use href="#i-book"/></svg></span>Defter</div>
+      <button class="iconbtn" data-act="logout" aria-label="Çıkış yap"><svg><use href="#i-logout"/></svg></button>
     </div>
 
-    <div class="panel">
-      <h2>Yeni Kayıt Ekle</h2>
-      <div id="form-msg"></div>
-      <form id="form">
-        <div class="seg" id="type-seg">
-          <button type="button" data-type="income" class="on income">Gelir</button>
-          <button type="button" data-type="expense">Gider</button>
-        </div>
-        <div class="seg" id="date-mode-seg" style="margin-bottom:2px">
-          <button type="button" data-mode="day" class="on">Güne göre</button>
-          <button type="button" data-mode="month">Aya göre</button>
-        </div>
-        <div class="row2">
-          <div><label id="f-date-label" for="f-date">Tarih</label><input type="date" id="f-date" required></div>
-          <div><label for="f-amount">Tutar (₺)</label><input type="number" id="f-amount" step="0.01" min="0.01" inputmode="decimal" required></div>
-        </div>
+    <div id="banner"></div>
+
+    <!-- ÖZET -->
+    <section id="view-ozet" data-view="ozet">
+      <div class="page-head">
         <div>
-          <label for="f-cat">Kategori</label>
-          <input type="text" id="f-cat" list="f-cat-list" placeholder="Seçin veya yeni kategori yazın" autocomplete="off" required>
-          <datalist id="f-cat-list"></datalist>
+          <h1>Özet</h1>
+          <div class="sub" id="ozet-sub"></div>
         </div>
-        <div><label for="f-desc">Açıklama (isteğe bağlı)</label><input type="text" id="f-desc" placeholder="ör. Trendyol sipariş #4821"></div>
-        <button class="submit" type="submit" id="f-submit">Kaydet</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- ============ SABİT GİDERLER ============ -->
-  <div class="panel" style="margin-top:16px">
-    <div class="panel-head">
-      <h2>Sabit Giderler</h2>
-      <div class="gen-box">
-        <input type="month" id="gen-month" aria-label="Oluşturulacak ay">
-        <button class="rowbtn" id="gen-month-btn">Bu ay için oluştur</button>
+        <div class="period">
+          <div class="seg" role="group" aria-label="Dönem türü" id="period-mode">
+            <button data-mode="day" aria-pressed="false">Gün</button>
+            <button data-mode="month" aria-pressed="true">Ay</button>
+            <button data-mode="year" aria-pressed="false">Yıl</button>
+          </div>
+          <div class="stepper">
+            <button id="p-prev" aria-label="Önceki dönem"><svg><use href="#i-left"/></svg></button>
+            <span class="label" id="p-label"></span>
+            <button id="p-next" aria-label="Sonraki dönem"><svg><use href="#i-right"/></svg></button>
+          </div>
+        </div>
       </div>
-    </div>
-    <p class="hint">Buraya eklediğiniz giderler her ayın kayıtlarına otomatik eklenir; her ay tekrar girmeniz gerekmez. Tutarı değiştirirseniz sonraki aylara bu tutar yansır. Tek bir ayın tutarını değiştirmek için aşağıdaki Son Kayıtlar'dan o kaydı düzenleyin.</p>
-    <div id="rec-msg"></div>
-    <div class="tablewrap">
-      <table>
-        <thead><tr><th>Ad</th><th>Kategori</th><th>Aylık tutar (₺)</th><th>Başlangıç</th><th>Aktif</th><th></th></tr></thead>
-        <tbody id="rec-body"></tbody>
-      </table>
-    </div>
-    <div class="minirow">
-      <div><label for="r-name">Ad</label><input type="text" id="r-name" placeholder="ör. Depo kirası"></div>
-      <div><label for="r-cat">Kategori</label><input type="text" id="r-cat" list="r-cat-list" placeholder="ör. Kira" autocomplete="off"><datalist id="r-cat-list"></datalist></div>
-      <div><label for="r-amount">Aylık tutar (₺)</label><input type="number" id="r-amount" step="0.01" min="0.01" inputmode="decimal"></div>
-      <div><label for="r-start">Başlangıç ayı</label><input type="month" id="r-start"></div>
-      <button class="submit" id="r-add-btn" style="margin-top:0">Sabit gider ekle</button>
-    </div>
-  </div>
 
-  <!-- ============ SON KAYITLAR ============ -->
-  <div class="panel" style="margin-top:16px">
-    <h2>Son Kayıtlar</h2>
-    <div id="tx-msg"></div>
-    <div class="tablewrap">
-      <table>
-        <thead><tr><th>Tarih</th><th>Kategori</th><th>Açıklama</th><th style="text-align:right">Tutar</th><th></th></tr></thead>
-        <tbody id="tx-body"></tbody>
-      </table>
+      <div class="overview">
+        <div class="hero">
+          <div class="eyebrow" id="hero-eyebrow">Net sonuç</div>
+          <div class="net num" id="hero-net">₺0</div>
+          <div class="net-note" id="hero-note"></div>
+          <div class="compare" id="hero-compare" hidden></div>
+          <div class="split">
+            <div class="splitbar" id="hero-bar" role="img"></div>
+            <div class="split-legend">
+              <div><div class="k"><i style="background:#3CC2AD"></i>Gelir</div><div class="v num" id="hero-inc">₺0</div></div>
+              <div><div class="k"><i style="background:#F08A5A"></i>Gider</div><div class="v num" id="hero-exp">₺0</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2 id="chart-title">Gelir ve gider</h2>
+            <div class="legend" aria-hidden="true"><span><i style="background:var(--inc)"></i>Gelir</span><span><i style="background:var(--exp)"></i>Gider</span></div>
+          </div>
+          <div class="chart-box"><canvas id="chart" aria-label="Gelir ve gider grafiği" role="img"></canvas><div class="chart-empty" id="chart-empty" hidden></div></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <h2 id="cat-title">Kategoriye göre</h2>
+            <div class="seg small" role="group" aria-label="Kategori türü" id="cat-type">
+              <button data-type="expense" aria-pressed="true">Gider</button>
+              <button data-type="income" aria-pressed="false">Gelir</button>
+            </div>
+          </div>
+          <div class="catbars" id="catbars"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Son kayıtlar</h2><span class="meta" id="recent-meta"></span></div>
+          <ul class="txlist" id="recent"></ul>
+          <button class="see-all" data-go="kayitlar">Tüm kayıtları gör</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- KAYITLAR -->
+    <section id="view-kayitlar" data-view="kayitlar" hidden>
+      <div class="page-head">
+        <div><h1>Kayıtlar</h1><div class="sub">Bir kayda dokunarak düzenleyebilir veya silebilirsiniz.</div></div>
+        <div class="stepper">
+          <button id="r-prev" aria-label="Önceki ay"><svg><use href="#i-left"/></svg></button>
+          <span class="label" id="r-label"></span>
+          <button id="r-next" aria-label="Sonraki ay"><svg><use href="#i-right"/></svg></button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="filters">
+          <div class="seg" role="group" aria-label="Kayıt türü" id="r-type">
+            <button data-type="all" aria-pressed="true">Tümü</button>
+            <button data-type="income" aria-pressed="false">Gelir</button>
+            <button data-type="expense" aria-pressed="false">Gider</button>
+          </div>
+          <label class="search"><svg><use href="#i-search"/></svg><input class="input" id="r-search" type="search" placeholder="Açıklama veya kategori ara" aria-label="Ara"></label>
+        </div>
+        <div class="totals" id="r-totals"></div>
+        <div id="r-list"></div>
+      </div>
+    </section>
+
+    <!-- SABİT GİDERLER -->
+    <section id="view-sabit" data-view="sabit" hidden>
+      <div class="page-head">
+        <div><h1>Sabit giderler</h1><div class="sub">Kira, maaş, abonelik gibi her ay tekrarlanan giderler. Her ayın kayıtlarına kendiliğinden eklenir.</div></div>
+        <button class="btn btn-primary" data-open="rec"><svg><use href="#i-plus"/></svg>Sabit gider ekle</button>
+      </div>
+      <div class="card" style="margin-bottom:18px">
+        <div class="rec-summary">
+          <div><div class="lbl">Aylık toplam</div><div class="big num" id="rec-total">₺0</div></div>
+          <div><div class="lbl">Aktif kalem</div><div class="big num" id="rec-count">0</div></div>
+          <div style="margin-left:auto">
+            <div class="lbl" style="margin-bottom:6px">Geçmiş bir ay için elle oluştur</div>
+            <div class="gen-row">
+              <input class="input" type="month" id="gen-month" aria-label="Ay">
+              <button class="btn btn-ghost" id="gen-btn">Oluştur</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card"><div id="rec-list"></div></div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Alt menü">
+    <a href="#ozet" data-route="ozet"><svg><use href="#i-home"/></svg>Özet</a>
+    <a href="#kayitlar" data-route="kayitlar"><svg><use href="#i-list"/></svg>Kayıtlar</a>
+    <button class="fab" data-open="tx" aria-label="Yeni kayıt"><svg><use href="#i-plus"/></svg></button>
+    <a href="#sabit" data-route="sabit"><svg><use href="#i-repeat"/></svg>Sabit</a>
+    <button class="tab" data-act="logout"><svg><use href="#i-logout"/></svg>Çıkış</button>
+  </nav>
+</div>
+
+<!-- ============ PANELLER ============ -->
+<div class="backdrop" id="backdrop"></div>
+
+<div class="sheet" id="sheet-tx" role="dialog" aria-modal="true" aria-labelledby="tx-title">
+  <div class="sheet-head"><h2 id="tx-title">Yeni kayıt</h2><button class="iconbtn" data-close aria-label="Kapat"><svg><use href="#i-x"/></svg></button></div>
+  <form class="sheet-body" id="tx-form" novalidate>
+    <div id="tx-origin"></div>
+    <div id="tx-error" class="form-error" hidden></div>
+    <div class="typeseg" role="group" aria-label="Kayıt türü">
+      <button type="button" data-type="income" aria-pressed="false"><svg><use href="#i-in"/></svg>Gelir</button>
+      <button type="button" data-type="expense" aria-pressed="true"><svg><use href="#i-out"/></svg>Gider</button>
     </div>
+    <div class="amount-field"><span>₺</span><input class="input num" id="tx-amount" type="number" step="0.01" min="0.01" inputmode="decimal" placeholder="0" aria-label="Tutar"></div>
+    <div class="field">
+      <label for="tx-cat">Kategori</label>
+      <input class="input" id="tx-cat" list="tx-cat-list" autocomplete="off" placeholder="Seçin veya yeni bir kategori yazın">
+      <datalist id="tx-cat-list"></datalist>
+      <div class="chips" id="tx-chips"></div>
+    </div>
+    <div class="field">
+      <label>Tarih</label>
+      <div class="datemode">
+        <label><input type="radio" name="dm" value="day" checked> Belirli bir gün</label>
+        <label><input type="radio" name="dm" value="month"> Ayın tamamı</label>
+      </div>
+      <input class="input" id="tx-date" type="date" aria-label="Tarih">
+    </div>
+    <div class="field"><label for="tx-desc">Açıklama <span style="color:var(--muted);font-weight:500">(isteğe bağlı)</span></label><input class="input" id="tx-desc" placeholder="ör. Trendyol sipariş #4821"></div>
+  </form>
+  <div class="sheet-foot">
+    <button class="btn btn-danger" id="tx-del" hidden>Sil</button>
+    <button class="btn btn-primary" id="tx-save">Kaydet</button>
   </div>
 </div>
+
+<div class="sheet" id="sheet-rec" role="dialog" aria-modal="true" aria-labelledby="rec-title">
+  <div class="sheet-head"><h2 id="rec-title">Sabit gider ekle</h2><button class="iconbtn" data-close aria-label="Kapat"><svg><use href="#i-x"/></svg></button></div>
+  <form class="sheet-body" id="rec-form" novalidate>
+    <div id="rec-error" class="form-error" hidden></div>
+    <div class="field"><label for="rec-name">Ad</label><input class="input" id="rec-name" placeholder="ör. Depo kirası"></div>
+    <div class="amount-field"><span>₺</span><input class="input num" id="rec-amount" type="number" step="0.01" min="0.01" inputmode="decimal" placeholder="0" aria-label="Aylık tutar"></div>
+    <div class="field">
+      <label for="rec-cat">Kategori</label>
+      <input class="input" id="rec-cat" list="rec-cat-list" autocomplete="off" placeholder="ör. Kira">
+      <datalist id="rec-cat-list"></datalist>
+      <div class="chips" id="rec-chips"></div>
+    </div>
+    <div class="field">
+      <label for="rec-start">Başlangıç ayı</label>
+      <input class="input" id="rec-start" type="month">
+      <div class="note">Bu aydan itibaren her ayın 1'ine gider olarak eklenir.</div>
+    </div>
+    <label class="check" id="rec-apply-wrap" hidden><input type="checkbox" id="rec-apply"> <span id="rec-apply-text">Bu ayın kaydını da yeni tutarla güncelle</span></label>
+  </form>
+  <div class="sheet-foot">
+    <button class="btn btn-danger" id="rec-del" hidden>Sil</button>
+    <button class="btn btn-primary" id="rec-save">Kaydet</button>
+  </div>
 </div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 // ============================================================
 // SUPABASE BAĞLANTI BİLGİLERİ
-// Project Settings > API Keys sayfasından alınır.
 // ============================================================
 const SUPABASE_URL = "https://rwjyszfukwjedaeqletc.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_8YhHaVvhcEAiEYZADcpkOA_d1XtnPts";
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Adres sonuna ?demo eklenirse örnek verilerle, giriş yapmadan açılır (tasarım önizlemesi için)
+const DEMO = new URLSearchParams(location.search).has("demo");
 
-// ---------------- YARDIMCI FONKSİYONLAR ----------------
-function tl(n){return (n<0?"-":"")+"₺"+Math.abs(n).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})}
-// Yerel saate göre tarih (UTC'ye çevirmeden — gece yarısı kaymasını önler)
-function fmtDate(d){
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+// ============================================================
+// YARDIMCILAR
+// ============================================================
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const MONTHS = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+const MONTHS_S = ["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
+const DAYS = ["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"];
+
+function tl(n, dec=true){
+  const s = Math.abs(n).toLocaleString("tr-TR",{minimumFractionDigits:dec?2:0,maximumFractionDigits:dec?2:0});
+  return (n<0?"−":"")+"₺"+s;
 }
-function monthStart(d){ return fmtDate(d).slice(0,8)+"01"; }            // "2026-09-01"
-function addMonths(ym01, n){                                          // "2026-09-01" + 1 -> "2026-10-01"
-  const [y,m] = ym01.split("-").map(Number);
-  const d = new Date(y, m-1+n, 1);
-  return monthStart(d);
+function tlShort(n){
+  const a=Math.abs(n);
+  if(a>=1e6) return "₺"+(n/1e6).toLocaleString("tr-TR",{maximumFractionDigits:1})+" Mn";
+  if(a>=1e3) return "₺"+(n/1e3).toLocaleString("tr-TR",{maximumFractionDigits:1})+" B";
+  return "₺"+n.toLocaleString("tr-TR",{maximumFractionDigits:0});
 }
-const MONTHS_TR = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
-function monthLabel(ym01){ const [y,m]=ym01.split("-"); return `${MONTHS_TR[Number(m)-1]} ${y}`; }
-function esc(s){ return String(s ?? "").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
-function showMsg(id, text, kind="ok", extraHtml=""){
-  const el = document.getElementById(id);
-  el.innerHTML = `<div class="msg ${kind}">${esc(text)}${extraHtml}</div>`;
-  if(kind==="ok" && !extraHtml) setTimeout(()=>{ if(el.textContent.includes(text)) el.innerHTML=""; }, 4000);
-}
+function fmtDate(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function parseDate(s){ const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d||1); }
+function monthStart(d){ return fmtDate(d).slice(0,8)+"01"; }
+function addMonths(ym01,n){ const [y,m]=ym01.split("-").map(Number); return monthStart(new Date(y,m-1+n,1)); }
+function monthLabel(ym){ const [y,m]=ym.split("-"); return `${MONTHS[Number(m)-1]} ${y}`; }
+function dayLabel(s){ const d=parseDate(s); return `${d.getDate()} ${MONTHS[d.getMonth()]} ${DAYS[d.getDay()]}`; }
+function esc(s){ return String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function trLower(s){ return (s||"").toLocaleLowerCase("tr"); }
 function friendlyError(err){
   const m = err?.message || String(err);
-  if(m.includes("recurring_expenses") && (m.includes("does not exist") || m.includes("schema cache")))
+  if(/recurring_expense/.test(m) && /(does not exist|schema cache|column)/.test(m))
     return "Sabit gider tablosu bulunamadı. migration_recurring_expenses.sql dosyasını Supabase SQL Editor'de çalıştırın.";
-  if(m.includes("duplicate key") && m.includes("transactions_recurring_month_uidx"))
-    return "Bu sabit gider o ay için zaten oluşturulmuş.";
+  if(/duplicate key/.test(m) && /recurring_month/.test(m)) return "Bu sabit gider o ay için zaten oluşturulmuş.";
+  if(/Failed to fetch/.test(m)) return "Sunucuya bağlanılamadı. İnternet bağlantınızı kontrol edin.";
   return m;
 }
 
-let categories = { income: [], expense: [] };
-let tx = [];
-let recurring = [];
-let recurringAvailable = true;
-let currentType = "income";
-let chart;
-let userId = null;
+let toastTimer;
+function toast(text, {error=false, action=null}={}){
+  const t=$("#toast");
+  t.className="toast on"+(error?" err":"");
+  t.innerHTML=`<span>${esc(text)}</span>`+(action?`<button>${esc(action.label)}</button>`:"");
+  if(action) t.querySelector("button").onclick=()=>{ t.classList.remove("on"); action.run(); };
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove("on"), action?7000:3200);
+}
 
-// ---------------- GİRİŞ / ÇIKIŞ ----------------
-document.getElementById("auth-form").addEventListener("submit", async (e)=>{
-  e.preventDefault();
-  const btn = document.getElementById("a-submit");
-  const msg = document.getElementById("auth-msg");
-  msg.innerHTML = "";
-  btn.disabled = true; btn.textContent = "Giriş yapılıyor...";
-  const email = document.getElementById("a-email").value;
-  const password = document.getElementById("a-pass").value;
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  btn.disabled = false; btn.textContent = "Giriş yap";
-  if(error){
-    msg.innerHTML = `<div class="msg err">${error.message === "Invalid login credentials" ? "E-posta veya şifre hatalı." : esc(error.message)}</div>`;
-  }
-});
+// ============================================================
+// VERİ KATMANI — Supabase veya demo. Uygulamanın geri kalanı
+// sadece bu fonksiyonları kullanır (mobil uygulamada da aynısı kullanılacak).
+// ============================================================
+function makeSupabaseApi(){
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const mapTx = r => ({ id:r.id, type:r.type, amount:Number(r.amount), date:r.tx_date, desc:r.description||"", catId:r.category_id, recurringId:r.recurring_expense_id||null });
+  const mapRec = r => ({ id:r.id, name:r.name, amount:Number(r.default_amount), active:r.is_active, start:r.start_month, last:r.last_generated_month, catId:r.category_id });
+  const txToRow = t => { const o={}; if("type" in t)o.type=t.type; if("amount" in t)o.amount=t.amount; if("date" in t)o.tx_date=t.date;
+    if("desc" in t)o.description=t.desc||null; if("catId" in t)o.category_id=t.catId; if("recurringId" in t)o.recurring_expense_id=t.recurringId; return o; };
+  const recToRow = r => { const o={}; if("name" in r)o.name=r.name; if("amount" in r)o.default_amount=r.amount; if("active" in r)o.is_active=r.active;
+    if("start" in r)o.start_month=r.start; if("last" in r)o.last_generated_month=r.last; if("catId" in r)o.category_id=r.catId; return o; };
+  const ok = ({data,error}) => { if(error) throw error; return data; };
+  let uid=null;
+  return {
+    onSession(cb){ sb.auth.onAuthStateChange((_e,s)=>{ uid=s?.user?.id||null; cb(s?{id:s.user.id,email:s.user.email}:null); }); },
+    async signIn(email,password){ const {error}=await sb.auth.signInWithPassword({email,password}); if(error) throw error; },
+    async signOut(){ await sb.auth.signOut(); },
+    async categories(){ return ok(await sb.from("categories").select("id,name,type").order("name")); },
+    async addCategory(name,type){ return ok(await sb.from("categories").insert({user_id:uid,name,type}).select("id,name,type").single()); },
+    async transactions(){
+      let res = await sb.from("transactions").select("id,type,amount,tx_date,description,category_id,recurring_expense_id").order("tx_date",{ascending:false}).order("created_at",{ascending:false}).limit(5000);
+      if(res.error && /recurring_expense_id/.test(res.error.message))
+        res = await sb.from("transactions").select("id,type,amount,tx_date,description,category_id").order("tx_date",{ascending:false}).limit(5000);
+      return ok(res).map(mapTx);
+    },
+    async addTransactions(list){ ok(await sb.from("transactions").insert(list.map(t=>({user_id:uid,...txToRow(t)})))); },
+    async updateTransaction(id,patch){ ok(await sb.from("transactions").update(txToRow(patch)).eq("id",id)); },
+    async deleteTransaction(id){ ok(await sb.from("transactions").delete().eq("id",id)); },
+    async recurring(){ return ok(await sb.from("recurring_expenses").select("id,name,default_amount,is_active,start_month,last_generated_month,category_id").order("created_at")).map(mapRec); },
+    async addRecurring(r){ return mapRec(ok(await sb.from("recurring_expenses").insert({user_id:uid,...recToRow(r)}).select("id,name,default_amount,is_active,start_month,last_generated_month,category_id").single())); },
+    async updateRecurring(id,patch){ ok(await sb.from("recurring_expenses").update(recToRow(patch)).eq("id",id)); },
+    async deleteRecurring(id){ ok(await sb.from("recurring_expenses").delete().eq("id",id)); },
+    async recurringDates(recId,from,to){ return ok(await sb.from("transactions").select("tx_date").eq("recurring_expense_id",recId).gte("tx_date",from).lt("tx_date",to)).map(r=>r.tx_date); },
+  };
+}
 
-document.getElementById("logout-btn").addEventListener("click", async ()=>{ await sb.auth.signOut(); });
-
-sb.auth.onAuthStateChange((event, session)=>{
-  if(session){
-    document.getElementById("auth-screen").style.display = "none";
-    document.getElementById("dashboard").style.display = "block";
-    document.getElementById("who-email").textContent = session.user.email;
-    if(userId !== session.user.id){
-      userId = session.user.id;
-      setTimeout(boot, 0);   // Supabase önerisi: auth olayının içinde doğrudan sorgu atmamak
+function makeDemoApi(){
+  let n=0; const id=()=>"d"+(++n);
+  const cats=[["Satış geliri","income"],["Kargo geliri","income"],["Diğer gelir","income"],["Ürün maliyeti","expense"],["Kargo gideri","expense"],["Pazaryeri komisyonu","expense"],["Reklam","expense"],["Kira","expense"],["Personel","expense"],["Diğer gider","expense"]].map(([name,type])=>({id:id(),name,type}));
+  const cid=name=>cats.find(c=>c.name===name).id;
+  const today=new Date(); const tx=[]; let seed=7;
+  const rnd=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; };
+  const pick=a=>a[Math.floor(rnd()*a.length)];
+  for(let back=0; back<14; back++){
+    const base=new Date(today.getFullYear(), today.getMonth()-back, 1);
+    const days=new Date(base.getFullYear(), base.getMonth()+1, 0).getDate();
+    const lastDay = back===0 ? today.getDate() : days;
+    for(let d=1; d<=lastDay; d++){
+      const date=fmtDate(new Date(base.getFullYear(), base.getMonth(), d));
+      const k=1+Math.floor(rnd()*3);
+      for(let i=0;i<k;i++) tx.push({id:id(),type:"income",amount:Math.round(400+rnd()*2600),date,desc:pick(["Trendyol sipariş","Hepsiburada sipariş","Web sitesi siparişi","N11 sipariş"])+" #"+Math.floor(1000+rnd()*9000),catId:cid("Satış geliri"),recurringId:null});
+      if(rnd()<.35) tx.push({id:id(),type:"expense",amount:Math.round(120+rnd()*900),date,desc:pick(["Aras Kargo","Yurtiçi Kargo","MNG Kargo"]),catId:cid("Kargo gideri"),recurringId:null});
+      if(rnd()<.18) tx.push({id:id(),type:"expense",amount:Math.round(300+rnd()*1800),date,desc:pick(["Meta reklam","Google Ads"]),catId:cid("Reklam"),recurringId:null});
+      if(rnd()<.12) tx.push({id:id(),type:"expense",amount:Math.round(2000+rnd()*9000),date,desc:"Tedarikçi ödemesi",catId:cid("Ürün maliyeti"),recurringId:null});
+      if(d===15) tx.push({id:id(),type:"expense",amount:Math.round(3500+rnd()*2500),date,desc:"Trendyol komisyon",catId:cid("Pazaryeri komisyonu"),recurringId:null});
     }
-  } else {
-    userId = null;
-    document.getElementById("auth-screen").style.display = "flex";
-    document.getElementById("dashboard").style.display = "none";
   }
-});
-
-// ---------------- VERİ YÜKLEME ----------------
-async function boot(){
-  await loadCategories();
-  await loadRecurring();
-  if(recurringAvailable){
-    const created = await autoGenerateRecurring();
-    if(created > 0) showMsg("top-msg", `${created} sabit gider kaydı bu aya otomatik eklendi.`);
-  }
-  await loadTransactions();
-  fillCats();
-  refreshAll();
+  const rec=[
+    {id:id(),name:"Depo kirası",amount:15000,active:true,start:addMonths(monthStart(today),-13),last:null,catId:cid("Kira")},
+    {id:id(),name:"Muhasebe hizmeti",amount:2500,active:true,start:addMonths(monthStart(today),-13),last:null,catId:cid("Diğer gider")},
+    {id:id(),name:"Depo çalışanı maaşı",amount:22000,active:true,start:addMonths(monthStart(today),-13),last:null,catId:cid("Personel")},
+  ];
+  return {
+    onSession(cb){ setTimeout(()=>cb({id:"demo",email:"demo@defter.app"}),0); },
+    async signIn(){}, async signOut(){ location.search=""; },
+    async categories(){ return cats.slice(); },
+    async addCategory(name,type){ const c={id:id(),name,type}; cats.push(c); return c; },
+    async transactions(){ return tx.slice().sort((a,b)=>b.date.localeCompare(a.date)); },
+    async addTransactions(list){ list.forEach(t=>tx.push({id:id(),desc:"",recurringId:null,...t})); },
+    async updateTransaction(i,p){ Object.assign(tx.find(t=>t.id===i),p); },
+    async deleteTransaction(i){ tx.splice(tx.findIndex(t=>t.id===i),1); },
+    async recurring(){ return rec.map(r=>({...r})); },
+    async addRecurring(r){ const o={id:id(),active:true,last:null,...r}; rec.push(o); return {...o}; },
+    async updateRecurring(i,p){ Object.assign(rec.find(r=>r.id===i),p); },
+    async deleteRecurring(i){ rec.splice(rec.findIndex(r=>r.id===i),1); tx.forEach(t=>{ if(t.recurringId===i) t.recurringId=null; }); },
+    async recurringDates(recId,from,to){ return tx.filter(t=>t.recurringId===recId && t.date>=from && t.date<to).map(t=>t.date); },
+  };
 }
 
-function refreshAll(){
-  renderStats(); renderTable(); renderRecurringList();
-  renderChart(document.querySelector("#tabs button.active").dataset.v);
+const api = DEMO ? makeDemoApi() : makeSupabaseApi();
+
+// ============================================================
+// DURUM
+// ============================================================
+const state = {
+  user:null, cats:[], tx:[], rec:[], recOk:true,
+  period:{ mode:"month", anchor:new Date() },
+  catType:"expense",
+  list:{ month:monthStart(new Date()), type:"all", q:"" },
+  route:"ozet",
+};
+const catName = id => state.cats.find(c=>c.id===id)?.name || "Kategorisiz";
+
+async function reload(){
+  const [cats, tx] = await Promise.all([api.categories(), api.transactions()]);
+  state.cats = cats; state.tx = tx;
+  try{ state.rec = await api.recurring(); state.recOk = true; }
+  catch(e){ state.rec = []; state.recOk = false; console.warn(e); }
 }
 
-async function loadCategories(){
-  const { data, error } = await sb.from("categories").select("id,name,type").order("name");
-  if(error){ console.error(error); return; }
-  categories = { income: [], expense: [] };
-  (data||[]).forEach(c=> categories[c.type].push(c));
-}
-
-async function loadTransactions(){
-  let res = await sb.from("transactions")
-    .select("id,type,amount,tx_date,description,category_id,recurring_expense_id,categories(name)")
-    .order("tx_date", { ascending:false }).order("created_at", { ascending:false })
-    .limit(500);
-  if(res.error && res.error.message.includes("recurring_expense_id")){
-    // migration henüz çalıştırılmamış — eski alanlarla devam et
-    res = await sb.from("transactions")
-      .select("id,type,amount,tx_date,description,category_id,categories(name)")
-      .order("tx_date", { ascending:false }).limit(500);
-  }
-  if(res.error){ console.error(res.error); return; }
-  tx = (res.data||[]).map(r=>({
-    id:r.id, type:r.type, amount:Number(r.amount), date:r.tx_date,
-    desc:r.description||"", cat: r.categories?.name || "—",
-    recurringId: r.recurring_expense_id || null
-  }));
-}
-
-async function loadRecurring(){
-  const { data, error } = await sb.from("recurring_expenses")
-    .select("id,name,default_amount,is_active,start_month,last_generated_month,category_id,categories(name)")
-    .order("created_at");
-  if(error){
-    recurringAvailable = false;
-    recurring = [];
-    showMsg("rec-msg", friendlyError(error), "err");
-    return;
-  }
-  recurringAvailable = true;
-  recurring = (data||[]).map(r=>({
-    id:r.id, name:r.name, amount:Number(r.default_amount), active:r.is_active,
-    start:r.start_month, last:r.last_generated_month, catId:r.category_id, cat:r.categories?.name || "—"
-  }));
-}
-
-function fillCats(){
-  document.getElementById("f-cat-list").innerHTML =
-    categories[currentType].map(c=>`<option value="${esc(c.name)}"></option>`).join("");
-  document.getElementById("r-cat-list").innerHTML =
-    categories.expense.map(c=>`<option value="${esc(c.name)}"></option>`).join("");
-}
-
-async function resolveCategoryId(name, type){
-  const trimmed = (name||"").trim();
-  if(!trimmed) return null;
-  const existing = categories[type].find(c=> c.name.toLocaleLowerCase("tr") === trimmed.toLocaleLowerCase("tr"));
-  if(existing) return existing.id;
-  const { data, error } = await sb.from("categories")
-    .insert({ user_id: userId, name: trimmed, type })
-    .select().single();
-  if(error) throw error;
-  categories[type].push({ id: data.id, name: data.name, type });
-  fillCats();
-  return data.id;
-}
-
-// ---------------- SABİT GİDER ÜRETİMİ ----------------
-// Bir sabit gider için verilen aylardan henüz oluşturulmamış olanları ekler
+// ============================================================
+// SABİT GİDER ÜRETİMİ
+// ============================================================
 async function createMissingMonths(r, months){
-  if(months.length === 0) return 0;
-  const { data: existing, error: e1 } = await sb.from("transactions")
-    .select("tx_date").eq("recurring_expense_id", r.id)
-    .gte("tx_date", months[0]).lte("tx_date", addMonths(months[months.length-1], 1));
-  if(e1) throw e1;
-  const have = new Set((existing||[]).map(x=>x.tx_date.slice(0,7)));
-  const rows = months.filter(m=> !have.has(m.slice(0,7))).map(m=>({
-    user_id: userId, type: "expense", amount: r.amount, tx_date: m,
-    category_id: r.catId, description: r.name, recurring_expense_id: r.id
-  }));
-  if(rows.length === 0) return 0;
-  const { error: e2 } = await sb.from("transactions").insert(rows);
-  if(e2) throw e2;
+  if(!months.length) return 0;
+  const have = new Set((await api.recurringDates(r.id, months[0], addMonths(months[months.length-1],1))).map(d=>d.slice(0,7)));
+  const rows = months.filter(m=>!have.has(m.slice(0,7))).map(m=>({type:"expense",amount:r.amount,date:m,desc:r.name,catId:r.catId,recurringId:r.id}));
+  if(rows.length) await api.addTransactions(rows);
   return rows.length;
 }
-
-// Girişte çalışır: her aktif sabit gider için, en son oluşturulan aydan bu aya kadar
-// eksik ayları tamamlar (en fazla 24 ay geriye). Silinen kayıtlar tekrar oluşturulmaz,
-// çünkü "en son oluşturulan ay" bilgisi saklanıyor.
-async function autoGenerateRecurring(){
-  const cur = monthStart(new Date());
-  let total = 0;
-  for(const r of recurring){
+async function autoGenerate(){
+  if(!state.recOk) return 0;
+  const cur = monthStart(new Date()); let total = 0;
+  for(const r of state.rec){
     if(!r.active) continue;
-    let from = r.last ? addMonths(r.last, 1) : r.start;
+    let from = r.last ? addMonths(r.last,1) : r.start;
     if(from < r.start) from = r.start;
-    const months = [];
-    for(let m = from; m <= cur && months.length < 24; m = addMonths(m, 1)) months.push(m);
-    if(months.length === 0) continue;
-    try{
-      total += await createMissingMonths(r, months);
-      await sb.from("recurring_expenses").update({ last_generated_month: cur }).eq("id", r.id);
-      r.last = cur;
-    }catch(err){
-      console.error(err);
-      showMsg("rec-msg", "Sabit giderler oluşturulamadı: " + friendlyError(err), "err");
-    }
+    const months=[]; for(let m=from; m<=cur && months.length<24; m=addMonths(m,1)) months.push(m);
+    if(!months.length) continue;
+    total += await createMissingMonths(r, months);
+    await api.updateRecurring(r.id,{last:cur}); r.last=cur;
   }
   return total;
 }
 
-// Elle seçilen bir ay için tüm aktif sabit giderleri oluştur
-document.getElementById("gen-month-btn").addEventListener("click", async ()=>{
-  const btn = document.getElementById("gen-month-btn");
-  const val = document.getElementById("gen-month").value;
-  if(!val){ showMsg("rec-msg", "Önce bir ay seçin.", "err"); return; }
-  const month = `${val}-01`;
-  const targets = recurring.filter(r=> r.active && r.start <= month);
-  if(targets.length === 0){ showMsg("rec-msg", `${monthLabel(month)} için oluşturulacak aktif sabit gider yok.`, "err"); return; }
-  btn.disabled = true;
-  try{
-    let total = 0;
-    for(const r of targets) total += await createMissingMonths(r, [month]);
-    await loadTransactions(); refreshAll();
-    showMsg("rec-msg", total > 0
-      ? `${monthLabel(month)} için ${total} kayıt oluşturuldu.`
-      : `${monthLabel(month)} için sabit giderler zaten oluşturulmuş.`);
-  }catch(err){
-    showMsg("rec-msg", friendlyError(err), "err");
-  }finally{ btn.disabled = false; }
+// ============================================================
+// GİRİŞ
+// ============================================================
+$("#auth-form").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const btn=$("#a-submit"), err=$("#auth-error");
+  err.hidden=true; btn.disabled=true; btn.textContent="Giriş yapılıyor…";
+  try{ await api.signIn($("#a-email").value, $("#a-pass").value); }
+  catch(ex){ err.textContent = ex.message==="Invalid login credentials" ? "E-posta veya şifre hatalı." : friendlyError(ex); err.hidden=false; }
+  finally{ btn.disabled=false; btn.textContent="Giriş yap"; }
 });
+document.addEventListener("click", e=>{ if(e.target.closest("[data-act='logout']")) api.signOut(); });
 
-document.getElementById("gen-month").addEventListener("change", e=>{
-  const v = e.target.value;
-  const cur = monthStart(new Date()).slice(0,7);
-  document.getElementById("gen-month-btn").textContent = (!v || v===cur) ? "Bu ay için oluştur" : `${monthLabel(v+"-01")} için oluştur`;
-});
-
-// ---------------- SABİT GİDER LİSTESİ ----------------
-function renderRecurringList(){
-  const body = document.getElementById("rec-body");
-  if(!recurringAvailable){ body.innerHTML = ""; return; }
-  if(recurring.length === 0){
-    body.innerHTML = `<tr><td colspan="6" class="empty">Henüz sabit gider yok. Kira, maaş, abonelik gibi her ay tekrarlanan giderleri aşağıdan ekleyin.</td></tr>`;
-    return;
-  }
-  body.innerHTML = recurring.map(r=>`
-    <tr data-id="${r.id}" class="${r.active?'':'inactive'}">
-      <td><input class="inline-txt" data-f="name" value="${esc(r.name)}" aria-label="Ad"></td>
-      <td>${esc(r.cat)}</td>
-      <td><input class="inline-amt" data-f="amount" type="number" step="0.01" min="0.01" inputmode="decimal" value="${r.amount}" aria-label="Aylık tutar"></td>
-      <td class="muted-cell">${monthLabel(r.start)}</td>
-      <td><input type="checkbox" data-f="active" ${r.active?"checked":""} aria-label="Aktif"></td>
-      <td style="white-space:nowrap;text-align:right"><button class="rowbtn danger" data-act="del">Sil</button></td>
-    </tr>`).join("");
-}
-
-document.getElementById("rec-body").addEventListener("change", async e=>{
-  const tr = e.target.closest("tr[data-id]"); if(!tr) return;
-  const r = recurring.find(x=>x.id===tr.dataset.id); if(!r) return;
-  const f = e.target.dataset.f;
-  let patch = {};
-  if(f==="name"){
-    const v = e.target.value.trim();
-    if(!v){ e.target.value = r.name; return; }
-    patch.name = v;
-  } else if(f==="amount"){
-    const v = parseFloat(e.target.value);
-    if(!(v>0)){ e.target.value = r.amount; showMsg("rec-msg","Tutar 0'dan büyük olmalı.","err"); return; }
-    patch.default_amount = v;
-  } else if(f==="active"){
-    patch.is_active = e.target.checked;
-  } else return;
-
-  const { error } = await sb.from("recurring_expenses").update(patch).eq("id", r.id);
-  if(error){ showMsg("rec-msg", friendlyError(error), "err"); return; }
-  if(patch.name) r.name = patch.name;
-  if(patch.is_active !== undefined){ r.active = patch.is_active; tr.classList.toggle("inactive", !r.active); }
-
-  if(patch.default_amount !== undefined){
-    r.amount = patch.default_amount;
-    // Bu ayın kaydı farklı tutardaysa, onu da güncellemeyi öner
-    const cur = monthStart(new Date()).slice(0,7);
-    const thisMonth = tx.find(t=> t.recurringId===r.id && t.date.slice(0,7)===cur);
-    if(thisMonth && thisMonth.amount !== r.amount){
-      showMsg("rec-msg", `${r.name} tutarı güncellendi; sonraki aylar ${tl(r.amount)} olacak.`, "ok",
-        ` <button class="rowbtn" id="apply-cur" data-tx="${thisMonth.id}" data-amt="${r.amount}">Bu ayın kaydını da ${esc(tl(r.amount))} yap</button>`);
-      return;
-    }
-    showMsg("rec-msg", `${r.name} tutarı güncellendi; sonraki aylar ${tl(r.amount)} olacak.`);
-    return;
-  }
-  showMsg("rec-msg", patch.is_active === false ? `${r.name} durduruldu, sonraki aylarda oluşturulmayacak.` :
-                     patch.is_active === true  ? `${r.name} yeniden etkinleştirildi.` : "Kaydedildi.");
-});
-
-document.getElementById("rec-msg").addEventListener("click", async e=>{
-  const b = e.target.closest("#apply-cur"); if(!b) return;
-  b.disabled = true;
-  const { error } = await sb.from("transactions").update({ amount: Number(b.dataset.amt) }).eq("id", b.dataset.tx);
-  if(error){ showMsg("rec-msg", friendlyError(error), "err"); return; }
-  await loadTransactions(); refreshAll();
-  showMsg("rec-msg", "Bu ayın kaydı da güncellendi.");
-});
-
-document.getElementById("rec-body").addEventListener("click", async e=>{
-  const b = e.target.closest("button[data-act='del']"); if(!b) return;
-  const tr = b.closest("tr[data-id]");
-  const r = recurring.find(x=>x.id===tr.dataset.id); if(!r) return;
-  if(!b.classList.contains("confirm")){
-    b.classList.add("confirm"); b.textContent = "Silinsin mi?";
-    setTimeout(()=>{ if(b.isConnected){ b.classList.remove("confirm"); b.textContent="Sil"; } }, 3000);
-    return;
-  }
-  const { error } = await sb.from("recurring_expenses").delete().eq("id", r.id);
-  if(error){ showMsg("rec-msg", friendlyError(error), "err"); return; }
-  recurring = recurring.filter(x=>x.id!==r.id);
-  await loadTransactions(); refreshAll();
-  showMsg("rec-msg", `${r.name} silindi. Geçmiş aylardaki kayıtları korundu.`);
-});
-
-document.getElementById("r-add-btn").addEventListener("click", async ()=>{
-  const btn = document.getElementById("r-add-btn");
-  const name = document.getElementById("r-name").value.trim();
-  const catName = document.getElementById("r-cat").value.trim() || name;
-  const amount = parseFloat(document.getElementById("r-amount").value);
-  const startVal = document.getElementById("r-start").value;
-  if(!recurringAvailable){ showMsg("rec-msg", friendlyError({message:"recurring_expenses does not exist"}), "err"); return; }
-  if(!name){ showMsg("rec-msg","Sabit giderin adını yazın (ör. Depo kirası).","err"); return; }
-  if(!(amount>0)){ showMsg("rec-msg","Aylık tutarı girin.","err"); return; }
-  const start = startVal ? `${startVal}-01` : monthStart(new Date());
-
-  btn.disabled = true;
-  try{
-    const category_id = await resolveCategoryId(catName, "expense");
-    const { data, error } = await sb.from("recurring_expenses").insert({
-      user_id: userId, name, category_id, default_amount: amount, start_month: start
-    }).select("id,name,default_amount,is_active,start_month,last_generated_month,category_id,categories(name)").single();
-    if(error) throw error;
-    const r = { id:data.id, name:data.name, amount:Number(data.default_amount), active:true,
-                start:data.start_month, last:null, catId:data.category_id, cat:data.categories?.name || catName };
-    recurring.push(r);
-    const created = await autoGenerateRecurring();
-    await loadTransactions(); refreshAll();
-    document.getElementById("r-name").value = "";
-    document.getElementById("r-cat").value = "";
-    document.getElementById("r-amount").value = "";
-    showMsg("rec-msg", created > 0
-      ? `${name} eklendi ve ${created} aylık kayıt oluşturuldu.`
-      : `${name} eklendi. ${monthLabel(start)} ayından itibaren otomatik oluşturulacak.`);
-  }catch(err){
-    showMsg("rec-msg", friendlyError(err), "err");
-  }finally{ btn.disabled = false; }
-});
-
-// ---------------- İSTATİSTİK / TABLO / GRAFİK ----------------
-function net(list){ return list.reduce((s,r)=> s + (r.type==="income"?r.amount:-r.amount), 0); }
-
-function renderStats(){
-  const today=fmtDate(new Date());
-  const [y,m]=today.split("-");
-  document.getElementById("stat-day").textContent = tl(net(tx.filter(r=>r.date===today)));
-  document.getElementById("stat-month").textContent = tl(net(tx.filter(r=>r.date.slice(0,7)===`${y}-${m}`)));
-  document.getElementById("stat-year").textContent = tl(net(tx.filter(r=>r.date.slice(0,4)===y)));
-}
-
-let editingId = null;
-function renderTable(){
-  const body=document.getElementById("tx-body");
-  if(tx.length===0){
-    body.innerHTML = `<tr><td colspan="5" class="empty">Henüz kayıt yok. Yukarıdaki formdan ilk kaydınızı ekleyin.</td></tr>`;
-    return;
-  }
-  body.innerHTML = tx.slice(0,50).map(r=>{
-    if(r.id === editingId){
-      return `
-      <tr data-id="${r.id}" class="editing">
-        <td><input type="date" class="inline-date" data-f="date" value="${r.date}" aria-label="Tarih"></td>
-        <td>${esc(r.cat)}</td>
-        <td><input class="inline-txt" data-f="desc" value="${esc(r.desc)}" aria-label="Açıklama"></td>
-        <td style="text-align:right"><input class="inline-amt" data-f="amount" type="number" step="0.01" min="0.01" inputmode="decimal" value="${r.amount}" aria-label="Tutar"></td>
-        <td style="white-space:nowrap;text-align:right">
-          <button class="rowbtn primary" data-act="save">Kaydet</button>
-          <button class="rowbtn" data-act="cancel">Vazgeç</button>
-        </td>
-      </tr>`;
-    }
-    const dateText = (r.recurringId && r.date.endsWith("-01"))
-      ? monthLabel(r.date)
-      : r.date.split("-").reverse().join(".");
-    return `
-    <tr data-id="${r.id}">
-      <td>${dateText}</td>
-      <td>${esc(r.cat)}${r.recurringId ? ' <span class="tag">sabit</span>' : ''}</td>
-      <td>${esc(r.desc)}</td>
-      <td style="text-align:right" class="amt ${r.type==='income'?'pos':'neg'}">${r.type==='income'?'+':'-'}${tl(Math.abs(r.amount))}</td>
-      <td style="white-space:nowrap;text-align:right">
-        <button class="rowbtn" data-act="edit">Düzenle</button>
-        <button class="rowbtn danger" data-act="del">Sil</button>
-      </td>
-    </tr>`;
-  }).join("");
-}
-
-document.getElementById("tx-body").addEventListener("click", async e=>{
-  const b = e.target.closest("button[data-act]"); if(!b) return;
-  const tr = b.closest("tr[data-id]");
-  const r = tx.find(x=>x.id===tr.dataset.id); if(!r) return;
-  const act = b.dataset.act;
-
-  if(act==="edit"){ editingId = r.id; renderTable(); tr.parentElement.querySelector(`tr[data-id="${r.id}"] [data-f="amount"]`)?.focus(); return; }
-  if(act==="cancel"){ editingId = null; renderTable(); return; }
-
-  if(act==="save"){
-    const date = tr.querySelector('[data-f="date"]').value;
-    const amount = parseFloat(tr.querySelector('[data-f="amount"]').value);
-    const desc = tr.querySelector('[data-f="desc"]').value.trim();
-    if(!date || !(amount>0)){ showMsg("tx-msg","Tarih ve 0'dan büyük bir tutar girin.","err"); return; }
-    b.disabled = true;
-    const { error } = await sb.from("transactions").update({ tx_date: date, amount, description: desc || null }).eq("id", r.id);
-    if(error){ b.disabled = false; showMsg("tx-msg", friendlyError(error), "err"); return; }
-    editingId = null;
-    await loadTransactions(); refreshAll();
-    showMsg("tx-msg","Kayıt güncellendi.");
-    return;
-  }
-
-  if(act==="del"){
-    if(!b.classList.contains("confirm")){
-      b.classList.add("confirm"); b.textContent = "Silinsin mi?";
-      setTimeout(()=>{ if(b.isConnected){ b.classList.remove("confirm"); b.textContent="Sil"; } }, 3000);
-      return;
-    }
-    const { error } = await sb.from("transactions").delete().eq("id", r.id);
-    if(error){ showMsg("tx-msg", friendlyError(error), "err"); return; }
-    await loadTransactions(); refreshAll();
-    showMsg("tx-msg","Kayıt silindi.");
-  }
-});
-
-document.getElementById("tx-body").addEventListener("keydown", e=>{
-  if(e.key==="Enter" && e.target.closest("tr.editing")){ e.preventDefault(); e.target.closest("tr").querySelector('[data-act="save"]').click(); }
-  if(e.key==="Escape" && e.target.closest("tr.editing")){ editingId = null; renderTable(); }
-});
-
-function renderChart(view){
-  const ctx=document.getElementById("chart").getContext("2d");
-  let labels=[], incomeData=[], expenseData=[];
-  const now=new Date();
-  const sum = (pred)=> tx.filter(pred).reduce((s,r)=>s+r.amount,0);
-  if(view==="year"){
-    document.getElementById("chart-title").textContent="Yıllık Gelir / Gider";
-    const years=[...new Set(tx.map(r=>r.date.slice(0,4)))].sort();
-    labels = years.length ? years : [String(now.getFullYear())];
-    incomeData=labels.map(y=>sum(r=>r.date.slice(0,4)===y && r.type==="income"));
-    expenseData=labels.map(y=>sum(r=>r.date.slice(0,4)===y && r.type==="expense"));
-  } else if(view==="month"){
-    document.getElementById("chart-title").textContent=`Aylık Gelir / Gider (${now.getFullYear()})`;
-    const months=["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
-    labels=months;
-    const key=i=>`${now.getFullYear()}-${String(i+1).padStart(2,"0")}`;
-    incomeData=months.map((_,i)=>sum(r=>r.date.slice(0,7)===key(i) && r.type==="income"));
-    expenseData=months.map((_,i)=>sum(r=>r.date.slice(0,7)===key(i) && r.type==="expense"));
+api.onSession(user=>{
+  if(user){
+    $("#auth").hidden=true; $("#app").classList.add("on");
+    $("#who-email").textContent=user.email;
+    if(state.user?.id!==user.id){ state.user=user; setTimeout(boot,0); }
   } else {
-    document.getElementById("chart-title").textContent="Son 14 Gün — Gelir / Gider";
-    const days=[...Array(14)].map((_,i)=>{const d=new Date(now); d.setDate(d.getDate()-(13-i)); return fmtDate(d);});
-    labels=days.map(d=>d.split("-").slice(1).reverse().join("."));
-    incomeData=days.map(d=>sum(r=>r.date===d && r.type==="income"));
-    expenseData=days.map(d=>sum(r=>r.date===d && r.type==="expense"));
+    state.user=null; $("#auth").hidden=false; $("#app").classList.remove("on");
   }
+});
+
+async function boot(){
+  try{
+    await reload();
+    const created = await autoGenerate();
+    if(created){ state.tx = await api.transactions(); toast(`${created} sabit gider kaydı otomatik eklendi.`); }
+  }catch(e){ console.error(e); toast(friendlyError(e),{error:true}); }
+  $("#banner").innerHTML = state.recOk ? "" : `<div class="banner">${esc(friendlyError({message:"recurring_expenses does not exist"}))}</div>`;
+  route();
+}
+
+// ============================================================
+// YÖNLENDİRME
+// ============================================================
+function route(){
+  const r = (location.hash||"#ozet").slice(1);
+  state.route = ["ozet","kayitlar","sabit"].includes(r) ? r : "ozet";
+  $$("[data-view]").forEach(v=>v.hidden = v.dataset.view!==state.route);
+  $$("[data-route]").forEach(a=>{ if(a.dataset.route===state.route) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
+  render();
+  window.scrollTo(0,0);
+}
+window.addEventListener("hashchange", route);
+document.addEventListener("click", e=>{ const g=e.target.closest("[data-go]"); if(g) location.hash=g.dataset.go; });
+
+function render(){
+  if(state.route==="ozet") renderOverview();
+  if(state.route==="kayitlar") renderList();
+  if(state.route==="sabit") renderRecurring();
+}
+
+// ============================================================
+// ÖZET
+// ============================================================
+function periodRange(){
+  const {mode,anchor}=state.period; const d=anchor;
+  if(mode==="day"){ const s=fmtDate(d); return {from:s,to:s,label:`${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`,noun:"Bugün"}; }
+  if(mode==="year"){ const y=d.getFullYear(); return {from:`${y}-01-01`,to:`${y}-12-31`,label:String(y),noun:"Bu yıl"}; }
+  const f=monthStart(d); const last=new Date(d.getFullYear(),d.getMonth()+1,0);
+  return {from:f,to:fmtDate(last),label:monthLabel(f),noun:"Bu ay"};
+}
+function shiftPeriod(n){
+  const {mode,anchor}=state.period; const d=new Date(anchor);
+  if(mode==="day") d.setDate(d.getDate()+n);
+  else if(mode==="month") d.setMonth(d.getMonth()+n, 1);
+  else d.setFullYear(d.getFullYear()+n, 0, 1);
+  state.period.anchor=d; renderOverview();
+}
+function isCurrentPeriod(){
+  const r=periodRange(); const t=fmtDate(new Date()); return t>=r.from && t<=r.to;
+}
+$("#period-mode").addEventListener("click", e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  state.period.mode=b.dataset.mode; state.period.anchor=new Date();
+  $$("#period-mode button").forEach(x=>x.setAttribute("aria-pressed", x===b));
+  renderOverview();
+});
+$("#p-prev").onclick=()=>shiftPeriod(-1);
+$("#p-next").onclick=()=>shiftPeriod(1);
+$("#cat-type").addEventListener("click", e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  state.catType=b.dataset.type; $$("#cat-type button").forEach(x=>x.setAttribute("aria-pressed", x===b));
+  renderCategories(periodTx());
+});
+
+function periodTx(){ const r=periodRange(); return state.tx.filter(t=>t.date>=r.from && t.date<=r.to); }
+const sumOf = (list,type)=> list.filter(t=>t.type===type).reduce((s,t)=>s+t.amount,0);
+
+function renderOverview(){
+  const r=periodRange(), list=periodTx();
+  const inc=sumOf(list,"income"), exp=sumOf(list,"expense"), net=inc-exp;
+  const current=isCurrentPeriod();
+  $("#p-label").textContent = current ? r.noun : r.label;
+  $("#p-next").disabled = current;
+  $("#ozet-sub").textContent = current ? r.label : "Geçmiş dönem";
+  $("#hero-eyebrow").textContent = `${current?r.noun:r.label} net sonuç`;
+  $("#hero-net").textContent = (net>0?"+":"")+tl(net);
+  $("#hero-inc").textContent = tl(inc); $("#hero-exp").textContent = tl(exp);
+  const tot=inc+exp;
+  $("#hero-bar").innerHTML = tot ? `<span class="i" style="width:${inc/tot*100}%"></span><span class="e" style="width:${exp/tot*100}%"></span>` : "";
+  $("#hero-bar").setAttribute("aria-label", `Gelir ${tl(inc)}, gider ${tl(exp)}`);
+  $("#hero-note").textContent = !list.length ? "Bu dönemde kayıt yok."
+    : inc>0 ? `Her ₺100 gelirin ₺${Math.max(0,Math.round(net/inc*100)).toLocaleString("tr-TR")}'si kâr olarak kaldı.`
+    : "Bu dönemde yalnızca gider var.";
+  // Önceki dönemle karşılaştırma
+  const prev = (()=>{ const {mode,anchor}=state.period; const d=new Date(anchor);
+    if(mode==="day") d.setDate(d.getDate()-1); else if(mode==="month") d.setMonth(d.getMonth()-1,1); else d.setFullYear(d.getFullYear()-1,0,1);
+    const save=state.period.anchor; state.period.anchor=d; const pr=periodRange(); state.period.anchor=save; return pr; })();
+  const prevList=state.tx.filter(t=>t.date>=prev.from && t.date<=prev.to);
+  const cmp=$("#hero-compare");
+  if(prevList.length && list.length){
+    const pn=sumOf(prevList,"income")-sumOf(prevList,"expense"), diff=net-pn;
+    const word={day:"Önceki güne",month:"Önceki aya",year:"Önceki yıla"}[state.period.mode];
+    cmp.innerHTML=`${word} göre <b class="num">${diff>=0?"+":""}${tl(diff,false)}</b> ${diff>=0?"daha iyi":"daha düşük"}`;
+    cmp.hidden=false;
+  } else cmp.hidden=true;
+  renderChart(list);
+  renderCategories(list);
+  renderRecent(list);
+}
+
+let chart;
+function renderChart(list){
+  const {mode,anchor}=state.period; const css=getComputedStyle(document.documentElement);
+  let labels=[], keys=[], keyOf, title, tipTitle;
+  if(mode==="year"){
+    const y=anchor.getFullYear(); labels=MONTHS_S.slice(); keys=MONTHS_S.map((_,i)=>`${y}-${String(i+1).padStart(2,"0")}`);
+    keyOf=t=>t.date.slice(0,7); title="Aylara göre gelir ve gider"; tipTitle=i=>`${MONTHS[i]} ${y}`;
+  } else if(mode==="month"){
+    const days=new Date(anchor.getFullYear(),anchor.getMonth()+1,0).getDate(); const f=monthStart(anchor).slice(0,8);
+    keys=[...Array(days)].map((_,i)=>f+String(i+1).padStart(2,"0")); labels=keys.map(k=>String(Number(k.slice(8))));
+    keyOf=t=>t.date; title="Günlere göre gelir ve gider"; tipTitle=i=>dayLabel(keys[i]);
+  } else {
+    // Gün görünümü: seçili gün + önceki 13 gün
+    keys=[...Array(14)].map((_,i)=>{const d=new Date(anchor); d.setDate(d.getDate()-(13-i)); return fmtDate(d);});
+    labels=keys.map(k=>{const d=parseDate(k); return `${d.getDate()} ${MONTHS_S[d.getMonth()]}`;});
+    keyOf=t=>t.date; title="Son 14 gün"; tipTitle=i=>dayLabel(keys[i]);
+    list = state.tx.filter(t=>t.date>=keys[0] && t.date<=keys[13]);
+  }
+  $("#chart-title").textContent=title;
+  const inc=keys.map(()=>0), exp=keys.map(()=>0); const idx=new Map(keys.map((k,i)=>[k,i]));
+  list.forEach(t=>{ const i=idx.get(keyOf(t)); if(i!==undefined) (t.type==="income"?inc:exp)[i]+=t.amount; });
+  const empty = !inc.some(Boolean) && !exp.some(Boolean);
+  $("#chart-empty").hidden=!empty; $("#chart-empty").innerHTML = empty ? "Bu dönem için gösterilecek kayıt yok." : "";
+  $("#chart").style.visibility = empty?"hidden":"visible";
+  const incC=css.getPropertyValue("--inc").trim(), expC=css.getPropertyValue("--exp").trim();
+  const muted=css.getPropertyValue("--muted").trim(), line=css.getPropertyValue("--line-2").trim(), panel=css.getPropertyValue("--panel").trim(), ink=css.getPropertyValue("--ink").trim();
   if(chart) chart.destroy();
-  const css = getComputedStyle(document.documentElement);
-  chart = new Chart(ctx, {
+  chart=new Chart($("#chart"),{
     type:"bar",
-    data:{ labels, datasets:[
-      {label:"Gelir", data:incomeData, backgroundColor:"#1E7A4C"},
-      {label:"Gider", data:expenseData, backgroundColor:"#A63D2E"}
+    data:{labels,datasets:[
+      {label:"Gelir",data:inc,backgroundColor:incC,hoverBackgroundColor:incC,borderRadius:{topLeft:4,topRight:4},borderSkipped:"bottom",borderColor:panel,borderWidth:{left:1,right:1},categoryPercentage:mode==="month"?.9:.7,barPercentage:.92,maxBarThickness:22},
+      {label:"Gider",data:exp,backgroundColor:expC,hoverBackgroundColor:expC,borderRadius:{topLeft:4,topRight:4},borderSkipped:"bottom",borderColor:panel,borderWidth:{left:1,right:1},categoryPercentage:mode==="month"?.9:.7,barPercentage:.92,maxBarThickness:22}
     ]},
     options:{
-      responsive:true,
-      plugins:{legend:{position:"bottom", labels:{color:css.getPropertyValue('--ink')}},
-               tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${tl(c.parsed.y)}`}}},
+      responsive:true, maintainAspectRatio:false, animation:{duration:250},
+      interaction:{mode:"index",intersect:false},
+      plugins:{legend:{display:false},
+        tooltip:{backgroundColor:ink,titleColor:panel,bodyColor:panel,padding:10,cornerRadius:8,boxPadding:4,usePointStyle:true,
+          titleFont:{family:"Manrope",weight:"700"},bodyFont:{family:"Manrope"},
+          callbacks:{title:it=>tipTitle(it[0].dataIndex),label:c=>` ${c.dataset.label}: ${tl(c.parsed.y)}`,
+            afterBody:it=>{ const i=it[0].dataIndex; const n=inc[i]-exp[i]; return `Net: ${n>0?"+":""}${tl(n)}`; }}}},
       scales:{
-        x:{ticks:{color:css.getPropertyValue('--muted')}, grid:{display:false}},
-        y:{ticks:{color:css.getPropertyValue('--muted')}, grid:{color:css.getPropertyValue('--line')}}
+        x:{grid:{display:false},border:{display:false},ticks:{color:muted,font:{family:"Manrope",size:11},maxRotation:0,autoSkip:true,autoSkipPadding:8}},
+        y:{beginAtZero:true,border:{display:false},grid:{color:line},ticks:{color:muted,font:{family:"Manrope",size:11},maxTicksLimit:5,callback:v=>tlShort(v)}}
       }
     }
   });
 }
 
-// ---------------- FORM ETKİLEŞİMLERİ ----------------
-document.getElementById("tabs").addEventListener("click", e=>{
-  const btn=e.target.closest("button"); if(!btn) return;
-  document.querySelectorAll("#tabs button").forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
-  renderChart(btn.dataset.v);
-});
+function renderCategories(list){
+  const type=state.catType; const by=new Map();
+  list.filter(t=>t.type===type).forEach(t=>by.set(t.catId,(by.get(t.catId)||0)+t.amount));
+  let rows=[...by.entries()].map(([id,v])=>({name:catName(id),v})).sort((a,b)=>b.v-a.v);
+  if(rows.length>6){ const rest=rows.slice(5).reduce((s,r)=>s+r.v,0); rows=rows.slice(0,5).concat({name:"Diğerleri",v:rest}); }
+  const total=rows.reduce((s,r)=>s+r.v,0), max=rows[0]?.v||1;
+  $("#cat-title").textContent = type==="expense" ? "Giderler nereye gitti" : "Gelirler nereden geldi";
+  $("#catbars").innerHTML = rows.length ? rows.map(r=>`
+    <div class="catbar">
+      <div class="row"><b>${esc(r.name)}</b><span class="num">${tl(r.v,false)}<span class="pct">%${Math.round(r.v/total*100)}</span></span></div>
+      <div class="track"><div class="fill" style="width:${Math.max(2,r.v/max*100)}%;background:var(--${type==="expense"?"exp":"inc"})"></div></div>
+    </div>`).join("") : `<div class="empty">Bu dönemde ${type==="expense"?"gider":"gelir"} kaydı yok.</div>`;
+}
 
-document.querySelectorAll("#type-seg button").forEach(b=>{
-  b.addEventListener("click",()=>{
-    currentType=b.dataset.type;
-    document.querySelectorAll("#type-seg button").forEach(x=>x.classList.remove("on","income","expense"));
-    b.classList.add("on", currentType);
-    document.getElementById("f-cat").value = "";
-    fillCats();
-  });
-});
+function txRow(t){
+  const sub = [catName(t.catId)];
+  const dateTxt = (t.recurringId && t.date.endsWith("-01")) ? monthLabel(t.date) : (()=>{const d=parseDate(t.date); return `${d.getDate()} ${MONTHS_S[d.getMonth()]}`;})();
+  return `<li><button class="txrow" data-tx="${t.id}">
+    <span class="txicon ${t.type}"><svg><use href="#i-${t.type==="income"?"in":"out"}"/></svg></span>
+    <span class="txmain"><span class="txtitle">${esc(t.desc || catName(t.catId))}</span>
+      <span class="txsub">${esc(t.desc?sub[0]:"")}${t.desc?" · ":""}${dateTxt}${t.recurringId?' <span class="pill">Sabit</span>':""}</span></span>
+    <span class="txamt num ${t.type}">${t.type==="income"?"+":"−"}${tl(t.amount)}</span>
+  </button></li>`;
+}
+function renderRecent(list){
+  const items=list.slice(0,6);
+  $("#recent-meta").textContent = list.length ? `${list.length} kayıt` : "";
+  $("#recent").innerHTML = items.length ? items.map(txRow).join("")
+    : `<li class="empty"><b>Bu dönemde kayıt yok</b>İlk gelir veya giderinizi ekleyerek başlayın.<br><button class="btn btn-amber" data-open="tx"><svg><use href="#i-plus"/></svg>Yeni kayıt</button></li>`;
+}
+document.addEventListener("click", e=>{ const b=e.target.closest("[data-tx]"); if(b) openTx(state.tx.find(t=>t.id===b.dataset.tx)); });
 
-let dateMode = "day";
-document.querySelectorAll("#date-mode-seg button").forEach(b=>{
-  b.addEventListener("click",()=>{
-    dateMode = b.dataset.mode;
-    document.querySelectorAll("#date-mode-seg button").forEach(x=>x.classList.remove("on"));
-    b.classList.add("on");
-    const dateInput = document.getElementById("f-date");
-    const label = document.getElementById("f-date-label");
-    if(dateMode === "month"){
-      dateInput.type = "month";
-      dateInput.value = fmtDate(new Date()).slice(0,7);
-      label.textContent = "Ay";
-    } else {
-      dateInput.type = "date";
-      dateInput.value = fmtDate(new Date());
-      label.textContent = "Tarih";
-    }
-  });
-});
+// ============================================================
+// KAYITLAR
+// ============================================================
+$("#r-prev").onclick=()=>{ state.list.month=addMonths(state.list.month,-1); renderList(); };
+$("#r-next").onclick=()=>{ state.list.month=addMonths(state.list.month,1); renderList(); };
+$("#r-type").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; state.list.type=b.dataset.type; $$("#r-type button").forEach(x=>x.setAttribute("aria-pressed",x===b)); renderList(); });
+$("#r-search").addEventListener("input", e=>{ state.list.q=e.target.value; renderList(); });
 
-document.getElementById("f-date").value = fmtDate(new Date());
-document.getElementById("gen-month").value = fmtDate(new Date()).slice(0,7);
-document.getElementById("r-start").value = fmtDate(new Date()).slice(0,7);
-
-document.getElementById("form").addEventListener("submit", async e=>{
-  e.preventDefault();
-  const btn = document.getElementById("f-submit");
-  const msg = document.getElementById("form-msg");
-  msg.innerHTML = "";
-  const rawDate=document.getElementById("f-date").value;
-  const amount=parseFloat(document.getElementById("f-amount").value);
-  const catName=document.getElementById("f-cat").value;
-  const desc=document.getElementById("f-desc").value;
-  if(!rawDate || !(amount>0)) return;
-  const tx_date = dateMode === "month" ? `${rawDate}-01` : rawDate;
-
-  btn.disabled = true; btn.textContent = "Kaydediliyor...";
-  try{
-    const category_id = await resolveCategoryId(catName, currentType);
-    const { error } = await sb.from("transactions").insert({
-      user_id: userId, type: currentType, amount, tx_date,
-      category_id, description: desc || null
-    });
-    if(error) throw error;
-    showMsg("form-msg","Kaydedildi.");
-    document.getElementById("f-amount").value="";
-    document.getElementById("f-desc").value="";
-    await loadTransactions(); refreshAll();
-  } catch(err){
-    showMsg("form-msg", "Kaydedilemedi: " + friendlyError(err), "err");
-  } finally {
-    btn.disabled = false; btn.textContent = "Kaydet";
+function renderList(){
+  const m=state.list.month, cur=monthStart(new Date());
+  $("#r-label").textContent = m===cur ? "Bu ay" : monthLabel(m);
+  $("#r-next").disabled = m>=cur;
+  const q=trLower(state.list.q.trim());
+  let list=state.tx.filter(t=>t.date.slice(0,7)===m.slice(0,7));
+  if(state.list.type!=="all") list=list.filter(t=>t.type===state.list.type);
+  if(q) list=list.filter(t=>trLower(t.desc).includes(q) || trLower(catName(t.catId)).includes(q));
+  const inc=sumOf(list,"income"), exp=sumOf(list,"expense");
+  $("#r-totals").innerHTML = list.length ? `<div>Gelir<b class="num" style="color:var(--inc-text)">+${tl(inc)}</b></div><div>Gider<b class="num">−${tl(exp)}</b></div><div>Net<b class="num">${inc-exp>0?"+":""}${tl(inc-exp)}</b></div><div>Kayıt<b class="num">${list.length}</b></div>` : "";
+  if(!list.length){
+    $("#r-list").innerHTML = `<div class="empty"><b>${q?"Aramanızla eşleşen kayıt yok":"Bu ay kayıt yok"}</b>${q?"Farklı bir kelime deneyin.":"Yeni bir kayıt ekleyerek başlayabilirsiniz."}</div>`;
+    return;
   }
+  const groups=new Map(); list.forEach(t=>{ if(!groups.has(t.date)) groups.set(t.date,[]); groups.get(t.date).push(t); });
+  $("#r-list").innerHTML=[...groups.entries()].map(([d,items])=>{
+    const n=sumOf(items,"income")-sumOf(items,"expense");
+    return `<div class="daygroup"><div class="dayhead"><span>${dayLabel(d)}</span><span class="num">${n>0?"+":""}${tl(n)}</span></div><ul class="txlist">${items.map(txRow).join("")}</ul></div>`;
+  }).join("");
+}
+
+// ============================================================
+// SABİT GİDERLER
+// ============================================================
+function renderRecurring(){
+  const act=state.rec.filter(r=>r.active);
+  $("#rec-total").textContent=tl(act.reduce((s,r)=>s+r.amount,0),false);
+  $("#rec-count").textContent=act.length;
+  if(!state.recOk){ $("#rec-list").innerHTML=`<div class="empty"><b>Sabit giderler henüz kurulmadı</b>${esc(friendlyError({message:"recurring_expenses does not exist"}))}</div>`; return; }
+  if(!state.rec.length){
+    $("#rec-list").innerHTML=`<div class="empty"><b>Henüz sabit gider yok</b>Kira, maaş, muhasebe gibi her ay ödediğiniz giderleri bir kez ekleyin; her ay kendiliğinden kayda geçsin.<br><button class="btn btn-primary" data-open="rec"><svg><use href="#i-plus"/></svg>Sabit gider ekle</button></div>`;
+    return;
+  }
+  $("#rec-list").innerHTML=state.rec.map(r=>`
+    <div class="rec-item ${r.active?"":"off"}">
+      <div><button class="name" data-rec="${r.id}">${esc(r.name)}</button>
+        <div class="sub">${esc(catName(r.catId))} · ${monthLabel(r.start)} ayından beri${r.active?"":" · Durduruldu"}</div></div>
+      <div class="amount num">${tl(r.amount)}<span style="color:var(--muted);font-weight:500;font-size:12.5px"> / ay</span></div>
+      <label class="switch" title="${r.active?"Durdur":"Başlat"}"><input type="checkbox" data-toggle="${r.id}" ${r.active?"checked":""} aria-label="${esc(r.name)} aktif"><span></span></label>
+    </div>`).join("");
+}
+document.addEventListener("click", e=>{ const b=e.target.closest("[data-rec]"); if(b) openRec(state.rec.find(r=>r.id===b.dataset.rec)); });
+$("#rec-list").addEventListener("change", async e=>{
+  const id=e.target.dataset.toggle; if(!id) return;
+  const r=state.rec.find(x=>x.id===id); const active=e.target.checked;
+  try{ await api.updateRecurring(id,{active}); r.active=active; renderRecurring();
+       toast(active?`${r.name} yeniden başlatıldı.`:`${r.name} durduruldu; sonraki aylarda eklenmeyecek.`); }
+  catch(ex){ e.target.checked=!active; toast(friendlyError(ex),{error:true}); }
 });
+$("#gen-month").value=monthStart(new Date()).slice(0,7);
+$("#gen-btn").onclick=async()=>{
+  const v=$("#gen-month").value; if(!v) return; const m=v+"-01";
+  const targets=state.rec.filter(r=>r.active && r.start<=m);
+  if(!targets.length){ toast(`${monthLabel(m)} için eklenecek aktif sabit gider yok.`); return; }
+  try{ let n=0; for(const r of targets) n+=await createMissingMonths(r,[m]);
+       state.tx=await api.transactions(); render();
+       toast(n?`${monthLabel(m)} için ${n} kayıt eklendi.`:`${monthLabel(m)} için sabit giderler zaten eklenmiş.`); }
+  catch(ex){ toast(friendlyError(ex),{error:true}); }
+};
+
+// ============================================================
+// PANELLER
+// ============================================================
+let openSheet=null, lastFocus=null;
+function showSheet(id){
+  lastFocus=document.activeElement; openSheet=$(id);
+  $("#backdrop").classList.add("on"); openSheet.classList.add("on");
+  setTimeout(()=>openSheet.querySelector("[data-autofocus]")?.focus(),230);
+}
+function closeSheet(){
+  if(!openSheet) return;
+  openSheet.classList.remove("on"); $("#backdrop").classList.remove("on"); openSheet=null;
+  lastFocus?.focus?.();
+}
+$("#backdrop").onclick=closeSheet;
+document.addEventListener("click", e=>{ if(e.target.closest("[data-close]")) closeSheet(); });
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeSheet(); });
+document.addEventListener("click", e=>{
+  const o=e.target.closest("[data-open]"); if(!o) return;
+  if(o.dataset.open==="tx") openTx(null); else openRec(null);
+});
+
+function topCats(type,limit=6){
+  const cnt=new Map(); state.tx.filter(t=>t.type===type).forEach(t=>cnt.set(t.catId,(cnt.get(t.catId)||0)+1));
+  const ids=state.cats.filter(c=>c.type===type).map(c=>c.id).sort((a,b)=>(cnt.get(b)||0)-(cnt.get(a)||0));
+  return ids.slice(0,limit).map(catName);
+}
+function fillChips(boxSel, inputSel, names){
+  const val=trLower($(inputSel).value.trim());
+  $(boxSel).innerHTML=names.map(n=>`<button type="button" class="chip" aria-pressed="${trLower(n)===val}" data-chip="${esc(n)}">${esc(n)}</button>`).join("");
+}
+async function resolveCat(name,type){
+  const t=(name||"").trim(); if(!t) return null;
+  const hit=state.cats.find(c=>c.type===type && trLower(c.name)===trLower(t)); if(hit) return hit.id;
+  const c=await api.addCategory(t,type); state.cats.push(c); return c.id;
+}
+
+// ----- Kayıt paneli -----
+let txEditing=null, txType="expense";
+function setTxType(type){
+  txType=type; $$("#sheet-tx .typeseg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.type===type));
+  $("#tx-cat-list").innerHTML=state.cats.filter(c=>c.type===type).map(c=>`<option value="${esc(c.name)}">`).join("");
+  fillChips("#tx-chips","#tx-cat",topCats(type));
+}
+function setDateMode(mode, value){
+  const inp=$("#tx-date"); $$("input[name=dm]").forEach(r=>r.checked=r.value===mode);
+  if(mode==="month"){ inp.type="month"; inp.value=(value||fmtDate(new Date())).slice(0,7); }
+  else { inp.type="date"; inp.value=value||fmtDate(new Date()); }
+}
+function openTx(t){
+  txEditing=t||null; $("#tx-error").hidden=true;
+  $("#tx-title").textContent = t ? "Kaydı düzenle" : "Yeni kayıt";
+  $("#tx-del").hidden=!t; $("#tx-del").classList.remove("confirm"); $("#tx-del").textContent="Sil";
+  $("#tx-amount").value = t ? t.amount : "";
+  $("#tx-cat").value = t ? (t.catId?catName(t.catId):"") : "";
+  $("#tx-desc").value = t ? t.desc : "";
+  setTxType(t ? t.type : txType);
+  setDateMode(t && t.recurringId && t.date.endsWith("-01") ? "month" : "day", t?.date);
+  const r = t?.recurringId && state.rec.find(x=>x.id===t.recurringId);
+  $("#tx-origin").innerHTML = t?.recurringId ? `<div class="origin"><svg><use href="#i-repeat"/></svg><span>Bu kayıt <b>${esc(r?r.name:"bir sabit gider")}</b> için otomatik oluşturuldu. Burada yaptığınız değişiklik yalnızca bu ayı etkiler.</span></div>` : "";
+  $("#tx-amount").setAttribute("data-autofocus","");
+  showSheet("#sheet-tx");
+}
+$("#sheet-tx .typeseg").addEventListener("click", e=>{ const b=e.target.closest("button"); if(b){ $("#tx-cat").value=""; setTxType(b.dataset.type); } });
+$("#tx-chips").addEventListener("click", e=>{ const c=e.target.closest("[data-chip]"); if(!c) return; $("#tx-cat").value=c.dataset.chip; fillChips("#tx-chips","#tx-cat",topCats(txType)); });
+$("#tx-cat").addEventListener("input", ()=>fillChips("#tx-chips","#tx-cat",topCats(txType)));
+$$("input[name=dm]").forEach(r=>r.addEventListener("change",()=>setDateMode(r.value)));
+$("#tx-form").addEventListener("submit", e=>{ e.preventDefault(); $("#tx-save").click(); });
+$("#tx-save").onclick=async()=>{
+  const err=$("#tx-error"); err.hidden=true;
+  const amount=parseFloat($("#tx-amount").value), raw=$("#tx-date").value, mode=$("input[name=dm]:checked").value;
+  if(!(amount>0)){ err.textContent="Tutarı girin."; err.hidden=false; $("#tx-amount").focus(); return; }
+  if(!raw){ err.textContent="Tarih seçin."; err.hidden=false; return; }
+  if(!$("#tx-cat").value.trim()){ err.textContent="Bir kategori seçin veya yazın."; err.hidden=false; $("#tx-cat").focus(); return; }
+  const date = mode==="month" ? raw+"-01" : raw;
+  const btn=$("#tx-save"); btn.disabled=true;
+  try{
+    const catId=await resolveCat($("#tx-cat").value,txType);
+    const data={type:txType,amount,date,desc:$("#tx-desc").value.trim(),catId};
+    if(txEditing) await api.updateTransaction(txEditing.id,data); else await api.addTransactions([data]);
+    state.tx=await api.transactions(); closeSheet(); render();
+    toast(txEditing?"Kayıt güncellendi.":"Kayıt eklendi.");
+  }catch(ex){ err.textContent=friendlyError(ex); err.hidden=false; }
+  finally{ btn.disabled=false; }
+};
+$("#tx-del").onclick=async()=>{
+  const b=$("#tx-del");
+  if(!b.classList.contains("confirm")){ b.classList.add("confirm"); b.textContent="Silmeyi onayla"; return; }
+  try{ const gone={...txEditing}; await api.deleteTransaction(txEditing.id); state.tx=await api.transactions(); closeSheet(); render();
+       toast("Kayıt silindi.",{action:{label:"Geri al",run:async()=>{ const {id,...rest}=gone; await api.addTransactions([rest]); state.tx=await api.transactions(); render(); }}}); }
+  catch(ex){ $("#tx-error").textContent=friendlyError(ex); $("#tx-error").hidden=false; }
+};
+
+// ----- Sabit gider paneli -----
+let recEditing=null;
+function openRec(r){
+  if(!state.recOk){ toast(friendlyError({message:"recurring_expenses does not exist"}),{error:true}); return; }
+  recEditing=r||null; $("#rec-error").hidden=true;
+  $("#rec-title").textContent = r ? "Sabit gideri düzenle" : "Sabit gider ekle";
+  $("#rec-del").hidden=!r; $("#rec-del").classList.remove("confirm"); $("#rec-del").textContent="Sil";
+  $("#rec-name").value = r?.name||"";
+  $("#rec-amount").value = r?.amount??"";
+  $("#rec-cat").value = r ? catName(r.catId) : "";
+  $("#rec-start").value = (r?.start || monthStart(new Date())).slice(0,7);
+  $("#rec-start").disabled = !!r;
+  $("#rec-cat-list").innerHTML=state.cats.filter(c=>c.type==="expense").map(c=>`<option value="${esc(c.name)}">`).join("");
+  fillChips("#rec-chips","#rec-cat",topCats("expense"));
+  const cur=monthStart(new Date()).slice(0,7);
+  const thisMonth = r && state.tx.find(t=>t.recurringId===r.id && t.date.slice(0,7)===cur);
+  $("#rec-apply-wrap").hidden=!thisMonth; $("#rec-apply").checked=false;
+  if(thisMonth) $("#rec-apply-text").textContent=`${monthLabel(cur)} kaydını da yeni tutarla güncelle (şu an ${tl(thisMonth.amount)})`;
+  $("#rec-name").setAttribute("data-autofocus","");
+  showSheet("#sheet-rec");
+}
+$("#rec-chips").addEventListener("click", e=>{ const c=e.target.closest("[data-chip]"); if(!c) return; $("#rec-cat").value=c.dataset.chip; fillChips("#rec-chips","#rec-cat",topCats("expense")); });
+$("#rec-cat").addEventListener("input", ()=>fillChips("#rec-chips","#rec-cat",topCats("expense")));
+$("#rec-form").addEventListener("submit", e=>{ e.preventDefault(); $("#rec-save").click(); });
+$("#rec-save").onclick=async()=>{
+  const err=$("#rec-error"); err.hidden=true;
+  const name=$("#rec-name").value.trim(), amount=parseFloat($("#rec-amount").value);
+  if(!name){ err.textContent="Sabit giderin adını yazın."; err.hidden=false; $("#rec-name").focus(); return; }
+  if(!(amount>0)){ err.textContent="Aylık tutarı girin."; err.hidden=false; $("#rec-amount").focus(); return; }
+  const btn=$("#rec-save"); btn.disabled=true;
+  try{
+    const catId=await resolveCat($("#rec-cat").value.trim()||name,"expense");
+    let msg;
+    if(recEditing){
+      await api.updateRecurring(recEditing.id,{name,amount,catId});
+      if($("#rec-apply").checked){
+        const cur=monthStart(new Date()).slice(0,7);
+        const t=state.tx.find(x=>x.recurringId===recEditing.id && x.date.slice(0,7)===cur);
+        if(t) await api.updateTransaction(t.id,{amount,desc:name,catId});
+      }
+      msg=`${name} güncellendi. Sonraki aylar ${tl(amount)} olarak eklenecek.`;
+    } else {
+      const start=($("#rec-start").value||monthStart(new Date()).slice(0,7))+"-01";
+      const r=await api.addRecurring({name,amount,catId,start,active:true});
+      state.rec.push(r);
+      const n=await autoGenerate();
+      msg = n ? `${name} eklendi ve ${n} aylık kayıt oluşturuldu.` : `${name} eklendi. ${monthLabel(start)} ayından itibaren eklenecek.`;
+    }
+    state.rec=await api.recurring(); state.tx=await api.transactions();
+    closeSheet(); render(); toast(msg);
+  }catch(ex){ err.textContent=friendlyError(ex); err.hidden=false; }
+  finally{ btn.disabled=false; }
+};
+$("#rec-del").onclick=async()=>{
+  const b=$("#rec-del");
+  if(!b.classList.contains("confirm")){ b.classList.add("confirm"); b.textContent="Silmeyi onayla"; return; }
+  try{ const name=recEditing.name; await api.deleteRecurring(recEditing.id); state.rec=await api.recurring(); state.tx=await api.transactions(); closeSheet(); render();
+       toast(`${name} silindi. Geçmiş aylardaki kayıtları korundu.`); }
+  catch(ex){ $("#rec-error").textContent=friendlyError(ex); $("#rec-error").hidden=false; }
+};
 </script>
 </body>
 </html>
