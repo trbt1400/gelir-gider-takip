@@ -62,6 +62,14 @@
   .amt.neg{color:var(--neg)}
   .tablewrap{max-height:340px;overflow:auto;-webkit-overflow-scrolling:touch}
   .empty{color:var(--muted);font-size:13px;padding:12px 4px}
+  .rowbtn{border:1px solid var(--line);background:var(--panel);color:var(--muted);padding:4px 9px;border-radius:6px;cursor:pointer;font-size:12px;margin-left:4px}
+  .rowbtn:hover{border-color:var(--accent);color:var(--accent)}
+  .rowbtn.danger:hover{border-color:var(--neg);color:var(--neg)}
+  .inline-amt{width:90px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font-size:13px;text-align:right}
+  .panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+  .panel-head h2{margin:0}
+  .minirow{display:grid;grid-template-columns:1.3fr 1fr .8fr .9fr auto;gap:8px;align-items:end;margin-top:12px}
+  @media (max-width:640px){.minirow{grid-template-columns:1fr}}
 
   form{display:flex;flex-direction:column;gap:10px}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -85,8 +93,18 @@
   #auth-screen h1{font-size:20px;margin:0 0 4px}
   #auth-screen p{color:var(--muted);font-size:13px;margin:0 0 18px}
   #dashboard{display:none}
+  .hint{color:var(--muted);font-size:12.5px;margin:-6px 0 12px;max-width:72ch}
+  .gen-box{display:flex;gap:6px;align-items:center}
+  .gen-box input{width:auto;padding:5px 8px;font-size:13px}
+  .inline-txt,.inline-date{width:100%;min-width:110px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font-size:13px}
+  .tag{font-size:11px;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 5px;margin-left:4px}
+  .rowbtn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .rowbtn.confirm{background:var(--neg);border-color:var(--neg);color:#fff}
+  tr.inactive td{opacity:.55}
+  .muted-cell{color:var(--muted);font-size:12.5px;white-space:nowrap}
+  input[type=checkbox]{width:auto}
+  .msg .rowbtn{margin-left:8px}
 </style>
-</head>
 <body>
 
 <!-- ============ GİRİŞ EKRANI ============ -->
@@ -97,12 +115,12 @@
     <div id="auth-msg"></div>
     <form id="auth-form">
       <div style="margin-bottom:10px">
-        <label>E-posta</label>
-        <input type="email" id="a-email" required>
+        <label for="a-email">E-posta</label>
+        <input type="email" id="a-email" autocomplete="username" required>
       </div>
       <div style="margin-bottom:14px">
-        <label>Şifre</label>
-        <input type="password" id="a-pass" required>
+        <label for="a-pass">Şifre</label>
+        <input type="password" id="a-pass" autocomplete="current-password" required>
       </div>
       <button class="submit" type="submit" id="a-submit">Giriş yap</button>
     </form>
@@ -122,6 +140,8 @@
       <button id="logout-btn">Çıkış yap</button>
     </div>
   </header>
+
+  <div id="top-msg"></div>
 
   <div class="stats">
     <div class="stat"><div class="label">Bugün (net)</div><div class="value" id="stat-day">—</div></div>
@@ -154,25 +174,53 @@
           <button type="button" data-mode="month">Aya göre</button>
         </div>
         <div class="row2">
-          <div><label id="f-date-label">Tarih</label><input type="date" id="f-date" required></div>
-          <div><label>Tutar (₺)</label><input type="number" id="f-amount" step="0.01" min="0" required></div>
+          <div><label id="f-date-label" for="f-date">Tarih</label><input type="date" id="f-date" required></div>
+          <div><label for="f-amount">Tutar (₺)</label><input type="number" id="f-amount" step="0.01" min="0.01" inputmode="decimal" required></div>
         </div>
         <div>
-          <label>Kategori</label>
+          <label for="f-cat">Kategori</label>
           <input type="text" id="f-cat" list="f-cat-list" placeholder="Seçin veya yeni kategori yazın" autocomplete="off" required>
           <datalist id="f-cat-list"></datalist>
         </div>
-        <div><label>Açıklama (opsiyonel)</label><input type="text" id="f-desc" placeholder="ör. Trendyol sipariş #4821"></div>
+        <div><label for="f-desc">Açıklama (isteğe bağlı)</label><input type="text" id="f-desc" placeholder="ör. Trendyol sipariş #4821"></div>
         <button class="submit" type="submit" id="f-submit">Kaydet</button>
       </form>
     </div>
   </div>
 
+  <!-- ============ SABİT GİDERLER ============ -->
   <div class="panel" style="margin-top:16px">
-    <h2>Son Kayıtlar</h2>
+    <div class="panel-head">
+      <h2>Sabit Giderler</h2>
+      <div class="gen-box">
+        <input type="month" id="gen-month" aria-label="Oluşturulacak ay">
+        <button class="rowbtn" id="gen-month-btn">Bu ay için oluştur</button>
+      </div>
+    </div>
+    <p class="hint">Buraya eklediğiniz giderler her ayın kayıtlarına otomatik eklenir; her ay tekrar girmeniz gerekmez. Tutarı değiştirirseniz sonraki aylara bu tutar yansır. Tek bir ayın tutarını değiştirmek için aşağıdaki Son Kayıtlar'dan o kaydı düzenleyin.</p>
+    <div id="rec-msg"></div>
     <div class="tablewrap">
       <table>
-        <thead><tr><th>Tarih</th><th>Kategori</th><th>Açıklama</th><th style="text-align:right">Tutar</th></tr></thead>
+        <thead><tr><th>Ad</th><th>Kategori</th><th>Aylık tutar (₺)</th><th>Başlangıç</th><th>Aktif</th><th></th></tr></thead>
+        <tbody id="rec-body"></tbody>
+      </table>
+    </div>
+    <div class="minirow">
+      <div><label for="r-name">Ad</label><input type="text" id="r-name" placeholder="ör. Depo kirası"></div>
+      <div><label for="r-cat">Kategori</label><input type="text" id="r-cat" list="r-cat-list" placeholder="ör. Kira" autocomplete="off"><datalist id="r-cat-list"></datalist></div>
+      <div><label for="r-amount">Aylık tutar (₺)</label><input type="number" id="r-amount" step="0.01" min="0.01" inputmode="decimal"></div>
+      <div><label for="r-start">Başlangıç ayı</label><input type="month" id="r-start"></div>
+      <button class="submit" id="r-add-btn" style="margin-top:0">Sabit gider ekle</button>
+    </div>
+  </div>
+
+  <!-- ============ SON KAYITLAR ============ -->
+  <div class="panel" style="margin-top:16px">
+    <h2>Son Kayıtlar</h2>
+    <div id="tx-msg"></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Tarih</th><th>Kategori</th><th>Açıklama</th><th style="text-align:right">Tutar</th><th></th></tr></thead>
         <tbody id="tx-body"></tbody>
       </table>
     </div>
@@ -182,23 +230,52 @@
 
 <script>
 // ============================================================
-// SUPABASE BAĞLANTI BİLGİLERİ — kendi projenizin değerleriyle değiştirin
-// Project Settings > API sayfasından alınır.
+// SUPABASE BAĞLANTI BİLGİLERİ
+// Project Settings > API Keys sayfasından alınır.
 // ============================================================
 const SUPABASE_URL = "https://rwjyszfukwjedaeqletc.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_8YhHaVvhcEAiEYZADcpkOA_d1XtnPts";
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// ---------------- YARDIMCI FONKSİYONLAR ----------------
 function tl(n){return (n<0?"-":"")+"₺"+Math.abs(n).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})}
-function fmtDate(d){return d.toISOString().slice(0,10)}
+// Yerel saate göre tarih (UTC'ye çevirmeden — gece yarısı kaymasını önler)
+function fmtDate(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function monthStart(d){ return fmtDate(d).slice(0,8)+"01"; }            // "2026-09-01"
+function addMonths(ym01, n){                                          // "2026-09-01" + 1 -> "2026-10-01"
+  const [y,m] = ym01.split("-").map(Number);
+  const d = new Date(y, m-1+n, 1);
+  return monthStart(d);
+}
+const MONTHS_TR = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+function monthLabel(ym01){ const [y,m]=ym01.split("-"); return `${MONTHS_TR[Number(m)-1]} ${y}`; }
+function esc(s){ return String(s ?? "").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function showMsg(id, text, kind="ok", extraHtml=""){
+  const el = document.getElementById(id);
+  el.innerHTML = `<div class="msg ${kind}">${esc(text)}${extraHtml}</div>`;
+  if(kind==="ok" && !extraHtml) setTimeout(()=>{ if(el.textContent.includes(text)) el.innerHTML=""; }, 4000);
+}
+function friendlyError(err){
+  const m = err?.message || String(err);
+  if(m.includes("recurring_expenses") && (m.includes("does not exist") || m.includes("schema cache")))
+    return "Sabit gider tablosu bulunamadı. migration_recurring_expenses.sql dosyasını Supabase SQL Editor'de çalıştırın.";
+  if(m.includes("duplicate key") && m.includes("transactions_recurring_month_uidx"))
+    return "Bu sabit gider o ay için zaten oluşturulmuş.";
+  return m;
+}
 
 let categories = { income: [], expense: [] };
 let tx = [];
+let recurring = [];
+let recurringAvailable = true;
 let currentType = "income";
 let chart;
+let userId = null;
 
-// ---------------- AUTH ----------------
+// ---------------- GİRİŞ / ÇIKIŞ ----------------
 document.getElementById("auth-form").addEventListener("submit", async (e)=>{
   e.preventDefault();
   const btn = document.getElementById("a-submit");
@@ -210,21 +287,23 @@ document.getElementById("auth-form").addEventListener("submit", async (e)=>{
   const { error } = await sb.auth.signInWithPassword({ email, password });
   btn.disabled = false; btn.textContent = "Giriş yap";
   if(error){
-    msg.innerHTML = `<div class="msg err">${error.message === "Invalid login credentials" ? "E-posta veya şifre hatalı." : error.message}</div>`;
+    msg.innerHTML = `<div class="msg err">${error.message === "Invalid login credentials" ? "E-posta veya şifre hatalı." : esc(error.message)}</div>`;
   }
 });
 
-document.getElementById("logout-btn").addEventListener("click", async ()=>{
-  await sb.auth.signOut();
-});
+document.getElementById("logout-btn").addEventListener("click", async ()=>{ await sb.auth.signOut(); });
 
 sb.auth.onAuthStateChange((event, session)=>{
   if(session){
     document.getElementById("auth-screen").style.display = "none";
     document.getElementById("dashboard").style.display = "block";
     document.getElementById("who-email").textContent = session.user.email;
-    boot();
+    if(userId !== session.user.id){
+      userId = session.user.id;
+      setTimeout(boot, 0);   // Supabase önerisi: auth olayının içinde doğrudan sorgu atmamak
+    }
   } else {
+    userId = null;
     document.getElementById("auth-screen").style.display = "flex";
     document.getElementById("dashboard").style.display = "none";
   }
@@ -233,11 +312,19 @@ sb.auth.onAuthStateChange((event, session)=>{
 // ---------------- VERİ YÜKLEME ----------------
 async function boot(){
   await loadCategories();
+  await loadRecurring();
+  if(recurringAvailable){
+    const created = await autoGenerateRecurring();
+    if(created > 0) showMsg("top-msg", `${created} sabit gider kaydı bu aya otomatik eklendi.`);
+  }
   await loadTransactions();
   fillCats();
-  renderStats(); renderTable();
-  const activeTab = document.querySelector("#tabs button.active").dataset.v;
-  renderChart(activeTab);
+  refreshAll();
+}
+
+function refreshAll(){
+  renderStats(); renderTable(); renderRecurringList();
+  renderChart(document.querySelector("#tabs button.active").dataset.v);
 }
 
 async function loadCategories(){
@@ -248,36 +335,251 @@ async function loadCategories(){
 }
 
 async function loadTransactions(){
-  const { data, error } = await sb.from("transactions")
-    .select("id,type,amount,tx_date,description,category_id,categories(name)")
-    .order("tx_date", { ascending:false })
+  let res = await sb.from("transactions")
+    .select("id,type,amount,tx_date,description,category_id,recurring_expense_id,categories(name)")
+    .order("tx_date", { ascending:false }).order("created_at", { ascending:false })
     .limit(500);
-  if(error){ console.error(error); return; }
-  tx = (data||[]).map(r=>({
+  if(res.error && res.error.message.includes("recurring_expense_id")){
+    // migration henüz çalıştırılmamış — eski alanlarla devam et
+    res = await sb.from("transactions")
+      .select("id,type,amount,tx_date,description,category_id,categories(name)")
+      .order("tx_date", { ascending:false }).limit(500);
+  }
+  if(res.error){ console.error(res.error); return; }
+  tx = (res.data||[]).map(r=>({
     id:r.id, type:r.type, amount:Number(r.amount), date:r.tx_date,
-    desc:r.description||"", cat: r.categories?.name || "—"
+    desc:r.description||"", cat: r.categories?.name || "—",
+    recurringId: r.recurring_expense_id || null
+  }));
+}
+
+async function loadRecurring(){
+  const { data, error } = await sb.from("recurring_expenses")
+    .select("id,name,default_amount,is_active,start_month,last_generated_month,category_id,categories(name)")
+    .order("created_at");
+  if(error){
+    recurringAvailable = false;
+    recurring = [];
+    showMsg("rec-msg", friendlyError(error), "err");
+    return;
+  }
+  recurringAvailable = true;
+  recurring = (data||[]).map(r=>({
+    id:r.id, name:r.name, amount:Number(r.default_amount), active:r.is_active,
+    start:r.start_month, last:r.last_generated_month, catId:r.category_id, cat:r.categories?.name || "—"
   }));
 }
 
 function fillCats(){
-  const list = document.getElementById("f-cat-list");
-  list.innerHTML = categories[currentType].map(c=>`<option value="${c.name}"></option>`).join("");
+  document.getElementById("f-cat-list").innerHTML =
+    categories[currentType].map(c=>`<option value="${esc(c.name)}"></option>`).join("");
+  document.getElementById("r-cat-list").innerHTML =
+    categories.expense.map(c=>`<option value="${esc(c.name)}"></option>`).join("");
 }
 
-async function resolveCategoryId(name, type, userId){
+async function resolveCategoryId(name, type){
   const trimmed = (name||"").trim();
   if(!trimmed) return null;
-  const existing = categories[type].find(c=> c.name.toLowerCase() === trimmed.toLowerCase());
+  const existing = categories[type].find(c=> c.name.toLocaleLowerCase("tr") === trimmed.toLocaleLowerCase("tr"));
   if(existing) return existing.id;
   const { data, error } = await sb.from("categories")
     .insert({ user_id: userId, name: trimmed, type })
     .select().single();
   if(error) throw error;
   categories[type].push({ id: data.id, name: data.name, type });
+  fillCats();
   return data.id;
 }
 
-// ---------------- STATS / TABLE / CHART ----------------
+// ---------------- SABİT GİDER ÜRETİMİ ----------------
+// Bir sabit gider için verilen aylardan henüz oluşturulmamış olanları ekler
+async function createMissingMonths(r, months){
+  if(months.length === 0) return 0;
+  const { data: existing, error: e1 } = await sb.from("transactions")
+    .select("tx_date").eq("recurring_expense_id", r.id)
+    .gte("tx_date", months[0]).lte("tx_date", addMonths(months[months.length-1], 1));
+  if(e1) throw e1;
+  const have = new Set((existing||[]).map(x=>x.tx_date.slice(0,7)));
+  const rows = months.filter(m=> !have.has(m.slice(0,7))).map(m=>({
+    user_id: userId, type: "expense", amount: r.amount, tx_date: m,
+    category_id: r.catId, description: r.name, recurring_expense_id: r.id
+  }));
+  if(rows.length === 0) return 0;
+  const { error: e2 } = await sb.from("transactions").insert(rows);
+  if(e2) throw e2;
+  return rows.length;
+}
+
+// Girişte çalışır: her aktif sabit gider için, en son oluşturulan aydan bu aya kadar
+// eksik ayları tamamlar (en fazla 24 ay geriye). Silinen kayıtlar tekrar oluşturulmaz,
+// çünkü "en son oluşturulan ay" bilgisi saklanıyor.
+async function autoGenerateRecurring(){
+  const cur = monthStart(new Date());
+  let total = 0;
+  for(const r of recurring){
+    if(!r.active) continue;
+    let from = r.last ? addMonths(r.last, 1) : r.start;
+    if(from < r.start) from = r.start;
+    const months = [];
+    for(let m = from; m <= cur && months.length < 24; m = addMonths(m, 1)) months.push(m);
+    if(months.length === 0) continue;
+    try{
+      total += await createMissingMonths(r, months);
+      await sb.from("recurring_expenses").update({ last_generated_month: cur }).eq("id", r.id);
+      r.last = cur;
+    }catch(err){
+      console.error(err);
+      showMsg("rec-msg", "Sabit giderler oluşturulamadı: " + friendlyError(err), "err");
+    }
+  }
+  return total;
+}
+
+// Elle seçilen bir ay için tüm aktif sabit giderleri oluştur
+document.getElementById("gen-month-btn").addEventListener("click", async ()=>{
+  const btn = document.getElementById("gen-month-btn");
+  const val = document.getElementById("gen-month").value;
+  if(!val){ showMsg("rec-msg", "Önce bir ay seçin.", "err"); return; }
+  const month = `${val}-01`;
+  const targets = recurring.filter(r=> r.active && r.start <= month);
+  if(targets.length === 0){ showMsg("rec-msg", `${monthLabel(month)} için oluşturulacak aktif sabit gider yok.`, "err"); return; }
+  btn.disabled = true;
+  try{
+    let total = 0;
+    for(const r of targets) total += await createMissingMonths(r, [month]);
+    await loadTransactions(); refreshAll();
+    showMsg("rec-msg", total > 0
+      ? `${monthLabel(month)} için ${total} kayıt oluşturuldu.`
+      : `${monthLabel(month)} için sabit giderler zaten oluşturulmuş.`);
+  }catch(err){
+    showMsg("rec-msg", friendlyError(err), "err");
+  }finally{ btn.disabled = false; }
+});
+
+document.getElementById("gen-month").addEventListener("change", e=>{
+  const v = e.target.value;
+  const cur = monthStart(new Date()).slice(0,7);
+  document.getElementById("gen-month-btn").textContent = (!v || v===cur) ? "Bu ay için oluştur" : `${monthLabel(v+"-01")} için oluştur`;
+});
+
+// ---------------- SABİT GİDER LİSTESİ ----------------
+function renderRecurringList(){
+  const body = document.getElementById("rec-body");
+  if(!recurringAvailable){ body.innerHTML = ""; return; }
+  if(recurring.length === 0){
+    body.innerHTML = `<tr><td colspan="6" class="empty">Henüz sabit gider yok. Kira, maaş, abonelik gibi her ay tekrarlanan giderleri aşağıdan ekleyin.</td></tr>`;
+    return;
+  }
+  body.innerHTML = recurring.map(r=>`
+    <tr data-id="${r.id}" class="${r.active?'':'inactive'}">
+      <td><input class="inline-txt" data-f="name" value="${esc(r.name)}" aria-label="Ad"></td>
+      <td>${esc(r.cat)}</td>
+      <td><input class="inline-amt" data-f="amount" type="number" step="0.01" min="0.01" inputmode="decimal" value="${r.amount}" aria-label="Aylık tutar"></td>
+      <td class="muted-cell">${monthLabel(r.start)}</td>
+      <td><input type="checkbox" data-f="active" ${r.active?"checked":""} aria-label="Aktif"></td>
+      <td style="white-space:nowrap;text-align:right"><button class="rowbtn danger" data-act="del">Sil</button></td>
+    </tr>`).join("");
+}
+
+document.getElementById("rec-body").addEventListener("change", async e=>{
+  const tr = e.target.closest("tr[data-id]"); if(!tr) return;
+  const r = recurring.find(x=>x.id===tr.dataset.id); if(!r) return;
+  const f = e.target.dataset.f;
+  let patch = {};
+  if(f==="name"){
+    const v = e.target.value.trim();
+    if(!v){ e.target.value = r.name; return; }
+    patch.name = v;
+  } else if(f==="amount"){
+    const v = parseFloat(e.target.value);
+    if(!(v>0)){ e.target.value = r.amount; showMsg("rec-msg","Tutar 0'dan büyük olmalı.","err"); return; }
+    patch.default_amount = v;
+  } else if(f==="active"){
+    patch.is_active = e.target.checked;
+  } else return;
+
+  const { error } = await sb.from("recurring_expenses").update(patch).eq("id", r.id);
+  if(error){ showMsg("rec-msg", friendlyError(error), "err"); return; }
+  if(patch.name) r.name = patch.name;
+  if(patch.is_active !== undefined){ r.active = patch.is_active; tr.classList.toggle("inactive", !r.active); }
+
+  if(patch.default_amount !== undefined){
+    r.amount = patch.default_amount;
+    // Bu ayın kaydı farklı tutardaysa, onu da güncellemeyi öner
+    const cur = monthStart(new Date()).slice(0,7);
+    const thisMonth = tx.find(t=> t.recurringId===r.id && t.date.slice(0,7)===cur);
+    if(thisMonth && thisMonth.amount !== r.amount){
+      showMsg("rec-msg", `${r.name} tutarı güncellendi; sonraki aylar ${tl(r.amount)} olacak.`, "ok",
+        ` <button class="rowbtn" id="apply-cur" data-tx="${thisMonth.id}" data-amt="${r.amount}">Bu ayın kaydını da ${esc(tl(r.amount))} yap</button>`);
+      return;
+    }
+    showMsg("rec-msg", `${r.name} tutarı güncellendi; sonraki aylar ${tl(r.amount)} olacak.`);
+    return;
+  }
+  showMsg("rec-msg", patch.is_active === false ? `${r.name} durduruldu, sonraki aylarda oluşturulmayacak.` :
+                     patch.is_active === true  ? `${r.name} yeniden etkinleştirildi.` : "Kaydedildi.");
+});
+
+document.getElementById("rec-msg").addEventListener("click", async e=>{
+  const b = e.target.closest("#apply-cur"); if(!b) return;
+  b.disabled = true;
+  const { error } = await sb.from("transactions").update({ amount: Number(b.dataset.amt) }).eq("id", b.dataset.tx);
+  if(error){ showMsg("rec-msg", friendlyError(error), "err"); return; }
+  await loadTransactions(); refreshAll();
+  showMsg("rec-msg", "Bu ayın kaydı da güncellendi.");
+});
+
+document.getElementById("rec-body").addEventListener("click", async e=>{
+  const b = e.target.closest("button[data-act='del']"); if(!b) return;
+  const tr = b.closest("tr[data-id]");
+  const r = recurring.find(x=>x.id===tr.dataset.id); if(!r) return;
+  if(!b.classList.contains("confirm")){
+    b.classList.add("confirm"); b.textContent = "Silinsin mi?";
+    setTimeout(()=>{ if(b.isConnected){ b.classList.remove("confirm"); b.textContent="Sil"; } }, 3000);
+    return;
+  }
+  const { error } = await sb.from("recurring_expenses").delete().eq("id", r.id);
+  if(error){ showMsg("rec-msg", friendlyError(error), "err"); return; }
+  recurring = recurring.filter(x=>x.id!==r.id);
+  await loadTransactions(); refreshAll();
+  showMsg("rec-msg", `${r.name} silindi. Geçmiş aylardaki kayıtları korundu.`);
+});
+
+document.getElementById("r-add-btn").addEventListener("click", async ()=>{
+  const btn = document.getElementById("r-add-btn");
+  const name = document.getElementById("r-name").value.trim();
+  const catName = document.getElementById("r-cat").value.trim() || name;
+  const amount = parseFloat(document.getElementById("r-amount").value);
+  const startVal = document.getElementById("r-start").value;
+  if(!recurringAvailable){ showMsg("rec-msg", friendlyError({message:"recurring_expenses does not exist"}), "err"); return; }
+  if(!name){ showMsg("rec-msg","Sabit giderin adını yazın (ör. Depo kirası).","err"); return; }
+  if(!(amount>0)){ showMsg("rec-msg","Aylık tutarı girin.","err"); return; }
+  const start = startVal ? `${startVal}-01` : monthStart(new Date());
+
+  btn.disabled = true;
+  try{
+    const category_id = await resolveCategoryId(catName, "expense");
+    const { data, error } = await sb.from("recurring_expenses").insert({
+      user_id: userId, name, category_id, default_amount: amount, start_month: start
+    }).select("id,name,default_amount,is_active,start_month,last_generated_month,category_id,categories(name)").single();
+    if(error) throw error;
+    const r = { id:data.id, name:data.name, amount:Number(data.default_amount), active:true,
+                start:data.start_month, last:null, catId:data.category_id, cat:data.categories?.name || catName };
+    recurring.push(r);
+    const created = await autoGenerateRecurring();
+    await loadTransactions(); refreshAll();
+    document.getElementById("r-name").value = "";
+    document.getElementById("r-cat").value = "";
+    document.getElementById("r-amount").value = "";
+    showMsg("rec-msg", created > 0
+      ? `${name} eklendi ve ${created} aylık kayıt oluşturuldu.`
+      : `${name} eklendi. ${monthLabel(start)} ayından itibaren otomatik oluşturulacak.`);
+  }catch(err){
+    showMsg("rec-msg", friendlyError(err), "err");
+  }finally{ btn.disabled = false; }
+});
+
+// ---------------- İSTATİSTİK / TABLO / GRAFİK ----------------
 function net(list){ return list.reduce((s,r)=> s + (r.type==="income"?r.amount:-r.amount), 0); }
 
 function renderStats(){
@@ -288,51 +590,112 @@ function renderStats(){
   document.getElementById("stat-year").textContent = tl(net(tx.filter(r=>r.date.slice(0,4)===y)));
 }
 
+let editingId = null;
 function renderTable(){
   const body=document.getElementById("tx-body");
   if(tx.length===0){
-    body.innerHTML = `<tr><td colspan="4" class="empty">Henüz kayıt yok — sağdaki formdan ilk kaydınızı ekleyin.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="5" class="empty">Henüz kayıt yok. Yukarıdaki formdan ilk kaydınızı ekleyin.</td></tr>`;
     return;
   }
-  body.innerHTML = tx.slice(0,30).map(r=>`
-    <tr>
-      <td>${r.date.split("-").reverse().join(".")}</td>
-      <td>${r.cat}</td>
-      <td>${r.desc}</td>
+  body.innerHTML = tx.slice(0,50).map(r=>{
+    if(r.id === editingId){
+      return `
+      <tr data-id="${r.id}" class="editing">
+        <td><input type="date" class="inline-date" data-f="date" value="${r.date}" aria-label="Tarih"></td>
+        <td>${esc(r.cat)}</td>
+        <td><input class="inline-txt" data-f="desc" value="${esc(r.desc)}" aria-label="Açıklama"></td>
+        <td style="text-align:right"><input class="inline-amt" data-f="amount" type="number" step="0.01" min="0.01" inputmode="decimal" value="${r.amount}" aria-label="Tutar"></td>
+        <td style="white-space:nowrap;text-align:right">
+          <button class="rowbtn primary" data-act="save">Kaydet</button>
+          <button class="rowbtn" data-act="cancel">Vazgeç</button>
+        </td>
+      </tr>`;
+    }
+    const dateText = (r.recurringId && r.date.endsWith("-01"))
+      ? monthLabel(r.date)
+      : r.date.split("-").reverse().join(".");
+    return `
+    <tr data-id="${r.id}">
+      <td>${dateText}</td>
+      <td>${esc(r.cat)}${r.recurringId ? ' <span class="tag">sabit</span>' : ''}</td>
+      <td>${esc(r.desc)}</td>
       <td style="text-align:right" class="amt ${r.type==='income'?'pos':'neg'}">${r.type==='income'?'+':'-'}${tl(Math.abs(r.amount))}</td>
-    </tr>`).join("");
+      <td style="white-space:nowrap;text-align:right">
+        <button class="rowbtn" data-act="edit">Düzenle</button>
+        <button class="rowbtn danger" data-act="del">Sil</button>
+      </td>
+    </tr>`;
+  }).join("");
 }
+
+document.getElementById("tx-body").addEventListener("click", async e=>{
+  const b = e.target.closest("button[data-act]"); if(!b) return;
+  const tr = b.closest("tr[data-id]");
+  const r = tx.find(x=>x.id===tr.dataset.id); if(!r) return;
+  const act = b.dataset.act;
+
+  if(act==="edit"){ editingId = r.id; renderTable(); tr.parentElement.querySelector(`tr[data-id="${r.id}"] [data-f="amount"]`)?.focus(); return; }
+  if(act==="cancel"){ editingId = null; renderTable(); return; }
+
+  if(act==="save"){
+    const date = tr.querySelector('[data-f="date"]').value;
+    const amount = parseFloat(tr.querySelector('[data-f="amount"]').value);
+    const desc = tr.querySelector('[data-f="desc"]').value.trim();
+    if(!date || !(amount>0)){ showMsg("tx-msg","Tarih ve 0'dan büyük bir tutar girin.","err"); return; }
+    b.disabled = true;
+    const { error } = await sb.from("transactions").update({ tx_date: date, amount, description: desc || null }).eq("id", r.id);
+    if(error){ b.disabled = false; showMsg("tx-msg", friendlyError(error), "err"); return; }
+    editingId = null;
+    await loadTransactions(); refreshAll();
+    showMsg("tx-msg","Kayıt güncellendi.");
+    return;
+  }
+
+  if(act==="del"){
+    if(!b.classList.contains("confirm")){
+      b.classList.add("confirm"); b.textContent = "Silinsin mi?";
+      setTimeout(()=>{ if(b.isConnected){ b.classList.remove("confirm"); b.textContent="Sil"; } }, 3000);
+      return;
+    }
+    const { error } = await sb.from("transactions").delete().eq("id", r.id);
+    if(error){ showMsg("tx-msg", friendlyError(error), "err"); return; }
+    await loadTransactions(); refreshAll();
+    showMsg("tx-msg","Kayıt silindi.");
+  }
+});
+
+document.getElementById("tx-body").addEventListener("keydown", e=>{
+  if(e.key==="Enter" && e.target.closest("tr.editing")){ e.preventDefault(); e.target.closest("tr").querySelector('[data-act="save"]').click(); }
+  if(e.key==="Escape" && e.target.closest("tr.editing")){ editingId = null; renderTable(); }
+});
 
 function renderChart(view){
   const ctx=document.getElementById("chart").getContext("2d");
   let labels=[], incomeData=[], expenseData=[];
   const now=new Date();
+  const sum = (pred)=> tx.filter(pred).reduce((s,r)=>s+r.amount,0);
   if(view==="year"){
     document.getElementById("chart-title").textContent="Yıllık Gelir / Gider";
     const years=[...new Set(tx.map(r=>r.date.slice(0,4)))].sort();
     labels = years.length ? years : [String(now.getFullYear())];
-    incomeData=labels.map(y=>tx.filter(r=>r.date.slice(0,4)===y && r.type==="income").reduce((s,r)=>s+r.amount,0));
-    expenseData=labels.map(y=>tx.filter(r=>r.date.slice(0,4)===y && r.type==="expense").reduce((s,r)=>s+r.amount,0));
+    incomeData=labels.map(y=>sum(r=>r.date.slice(0,4)===y && r.type==="income"));
+    expenseData=labels.map(y=>sum(r=>r.date.slice(0,4)===y && r.type==="expense"));
   } else if(view==="month"){
     document.getElementById("chart-title").textContent=`Aylık Gelir / Gider (${now.getFullYear()})`;
     const months=["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
     labels=months;
-    incomeData=months.map((_,i)=>{
-      const key=`${now.getFullYear()}-${String(i+1).padStart(2,"0")}`;
-      return tx.filter(r=>r.date.slice(0,7)===key && r.type==="income").reduce((s,r)=>s+r.amount,0);
-    });
-    expenseData=months.map((_,i)=>{
-      const key=`${now.getFullYear()}-${String(i+1).padStart(2,"0")}`;
-      return tx.filter(r=>r.date.slice(0,7)===key && r.type==="expense").reduce((s,r)=>s+r.amount,0);
-    });
+    const key=i=>`${now.getFullYear()}-${String(i+1).padStart(2,"0")}`;
+    incomeData=months.map((_,i)=>sum(r=>r.date.slice(0,7)===key(i) && r.type==="income"));
+    expenseData=months.map((_,i)=>sum(r=>r.date.slice(0,7)===key(i) && r.type==="expense"));
   } else {
     document.getElementById("chart-title").textContent="Son 14 Gün — Gelir / Gider";
     const days=[...Array(14)].map((_,i)=>{const d=new Date(now); d.setDate(d.getDate()-(13-i)); return fmtDate(d);});
     labels=days.map(d=>d.split("-").slice(1).reverse().join("."));
-    incomeData=days.map(d=>tx.filter(r=>r.date===d && r.type==="income").reduce((s,r)=>s+r.amount,0));
-    expenseData=days.map(d=>tx.filter(r=>r.date===d && r.type==="expense").reduce((s,r)=>s+r.amount,0));
+    incomeData=days.map(d=>sum(r=>r.date===d && r.type==="income"));
+    expenseData=days.map(d=>sum(r=>r.date===d && r.type==="expense"));
   }
   if(chart) chart.destroy();
+  const css = getComputedStyle(document.documentElement);
   chart = new Chart(ctx, {
     type:"bar",
     data:{ labels, datasets:[
@@ -341,16 +704,17 @@ function renderChart(view){
     ]},
     options:{
       responsive:true,
-      plugins:{legend:{position:"bottom", labels:{color:getComputedStyle(document.documentElement).getPropertyValue('--ink')}}},
+      plugins:{legend:{position:"bottom", labels:{color:css.getPropertyValue('--ink')}},
+               tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${tl(c.parsed.y)}`}}},
       scales:{
-        x:{ticks:{color:getComputedStyle(document.documentElement).getPropertyValue('--muted')}, grid:{display:false}},
-        y:{ticks:{color:getComputedStyle(document.documentElement).getPropertyValue('--muted')}, grid:{color:getComputedStyle(document.documentElement).getPropertyValue('--line')}}
+        x:{ticks:{color:css.getPropertyValue('--muted')}, grid:{display:false}},
+        y:{ticks:{color:css.getPropertyValue('--muted')}, grid:{color:css.getPropertyValue('--line')}}
       }
     }
   });
 }
 
-// ---------------- ETKİLEŞİMLER ----------------
+// ---------------- FORM ETKİLEŞİMLERİ ----------------
 document.getElementById("tabs").addEventListener("click", e=>{
   const btn=e.target.closest("button"); if(!btn) return;
   document.querySelectorAll("#tabs button").forEach(b=>b.classList.remove("active"));
@@ -389,6 +753,8 @@ document.querySelectorAll("#date-mode-seg button").forEach(b=>{
 });
 
 document.getElementById("f-date").value = fmtDate(new Date());
+document.getElementById("gen-month").value = fmtDate(new Date()).slice(0,7);
+document.getElementById("r-start").value = fmtDate(new Date()).slice(0,7);
 
 document.getElementById("form").addEventListener("submit", async e=>{
   e.preventDefault();
@@ -399,28 +765,23 @@ document.getElementById("form").addEventListener("submit", async e=>{
   const amount=parseFloat(document.getElementById("f-amount").value);
   const catName=document.getElementById("f-cat").value;
   const desc=document.getElementById("f-desc").value;
-  if(!rawDate || !amount) return;
+  if(!rawDate || !(amount>0)) return;
   const tx_date = dateMode === "month" ? `${rawDate}-01` : rawDate;
 
   btn.disabled = true; btn.textContent = "Kaydediliyor...";
   try{
-    const { data: { user } } = await sb.auth.getUser();
-    const category_id = await resolveCategoryId(catName, currentType, user.id);
+    const category_id = await resolveCategoryId(catName, currentType);
     const { error } = await sb.from("transactions").insert({
-      user_id: user.id, type: currentType, amount, tx_date,
+      user_id: userId, type: currentType, amount, tx_date,
       category_id, description: desc || null
     });
     if(error) throw error;
-    msg.innerHTML = `<div class="msg ok">Kaydedildi.</div>`;
+    showMsg("form-msg","Kaydedildi.");
     document.getElementById("f-amount").value="";
     document.getElementById("f-desc").value="";
-    fillCats();
-    await loadTransactions();
-    renderStats(); renderTable();
-    const activeTab=document.querySelector("#tabs button.active").dataset.v;
-    renderChart(activeTab);
+    await loadTransactions(); refreshAll();
   } catch(err){
-    msg.innerHTML = `<div class="msg err">Kaydedilemedi: ${err.message}</div>`;
+    showMsg("form-msg", "Kaydedilemedi: " + friendlyError(err), "err");
   } finally {
     btn.disabled = false; btn.textContent = "Kaydet";
   }
